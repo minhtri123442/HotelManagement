@@ -3,6 +3,8 @@ import {
   FaUserClock, FaClock, FaMoneyBill, FaTools, FaTags, FaSignOutAlt
 } from "react-icons/fa";
 
+import { Link } from "react-router-dom";
+
 export default function Dashboard() {
   return (
     <div className="w-56 h-screen bg-gradient-to-b from-blue-200 to-blue-400 text-blue-900 p-5 flex flex-col shadow-xl">
@@ -11,7 +13,7 @@ export default function Dashboard() {
       <nav className="flex flex-col gap-1">
 
         <p className="text-xs uppercase font-semibold opacity-70 mb-1 text-blue-700">Quản lý</p>
-        <MenuItem icon={<FaUserFriends />} label="Khách hàng" />
+        <MenuItem icon={<FaUserFriends />} label="Khách hàng" to="/customers" />
         <MenuItem icon={<FaBox />} label="Đơn hàng" />
         <MenuItem icon={<FaBed />} label="Phòng" />
         <MenuItem icon={<FaUserFriends />} label="Nhân viên" />
@@ -41,15 +43,16 @@ interface MenuItemProps {
   icon: React.ReactNode;
   label: string;
   red?: boolean;
+  to?: string;
 }
 
-function MenuItem({ icon, label, red = false }: MenuItemProps) {
+function MenuItem({ icon, label, red = false, to = "#" }: MenuItemProps) {
   return (
-    <a
-      href="#"
+    <Link
+      to={to}
       className={`
         flex items-center gap-2 px-2.5 py-2 rounded-md transition-all text-sm
-        text-white hover:text-white   /* ÉP KHÔNG ĐỔI MÀU */
+        text-white hover:text-white
         ${red 
           ? "hover:bg-red-300/40" 
           : "hover:bg-blue-500/70"
@@ -58,6 +61,6 @@ function MenuItem({ icon, label, red = false }: MenuItemProps) {
     >
       <span className="text-lg">{icon}</span>
       <span>{label}</span>
-    </a>
+    </Link>
   );
 }
