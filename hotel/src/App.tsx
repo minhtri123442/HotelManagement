@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/mainlayout";
 import CustomerManagement from "./pages/frmQLKH";
-
+import EmployeeManagement from "./pages/frmQLNV";
 export default function App() {
   return (
     <BrowserRouter>
@@ -13,6 +13,8 @@ export default function App() {
           {/* Trang con */}
           <Route path="customers" element={<CustomerManagement />} />
 
+          {/* Nhân viên */}
+          <Route path="employees" element={<EmployeeManagement />} />
         </Route>
 
       </Routes>

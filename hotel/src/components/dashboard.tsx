@@ -16,7 +16,7 @@ export default function Dashboard() {
         <MenuItem icon={<FaUserFriends />} label="Khách hàng" to="/customers" />
         <MenuItem icon={<FaBox />} label="Đơn hàng" />
         <MenuItem icon={<FaBed />} label="Phòng" />
-        <MenuItem icon={<FaUserFriends />} label="Nhân viên" />
+        <MenuItem icon={<FaUserFriends />} label="Nhân viên" to="/employees" />
         <MenuItem icon={<FaConciergeBell />} label="Dịch vụ" />
         <MenuItem icon={<FaFileInvoice />} label="Hóa đơn" />
 
