@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("Employee")]
-[Index("EmployeeCode", Name = "UQ__Employee__1F64254822B8FC4F", IsUnique = true)]
-[Index("Username", Name = "UQ__Employee__536C85E46FD65A90", IsUnique = true)]
+[Index("EmployeeCode", Name = "UQ__Employee__1F64254814320CDE", IsUnique = true)]
+[Index("Username", Name = "UQ__Employee__536C85E49FE07376", IsUnique = true)]
 public partial class Employee
 {
     [Key]

@@ -11,7 +11,7 @@ export default function MainLayout() {
       </div>
 
       {/* Nội dung chiếm toàn bộ phần còn lại */}
-      <div className="flex-1 h-full bg-gray-100 overflow-y-auto p-8">
+      <div className="flex-1 h-full text-sm bg-gray-100 overflow-y-auto p-5">
         <Outlet />
       </div>
 

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("Hotel")]
-[Index("HotelCode", Name = "UQ__Hotel__175CAD58E172DE28", IsUnique = true)]
+[Index("HotelCode", Name = "UQ__Hotel__175CAD58748CE9F7", IsUnique = true)]
 public partial class Hotel
 {
     [Key]
@@ -43,8 +43,14 @@ public partial class Hotel
     [StringLength(50)]
     public string? Status { get; set; }
 
+    [StringLength(300)]
+    public string? MainImageUrl { get; set; }
+
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
+
+    [InverseProperty("Hotel")]
+    public virtual ICollection<HotelImage> HotelImages { get; set; } = new List<HotelImage>();
 
     [InverseProperty("Hotel")]
     public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();

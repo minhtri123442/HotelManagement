@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("InvoiceDetail")]
-[Index("InvoiceDetailCode", Name = "UQ__InvoiceD__3F1D23DB9185476D", IsUnique = true)]
+[Index("InvoiceDetailCode", Name = "UQ__InvoiceD__3F1D23DB3D1FB410", IsUnique = true)]
 public partial class InvoiceDetail
 {
     [Key]

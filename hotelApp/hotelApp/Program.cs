@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using hotelApp.Models;
 using AutoMapper;
+using hotelApp.Reposities;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==================== DB CONTEXT ====================
 builder.Services.AddDbContext<HotelContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IHotelReposity, HotelReposity>();
+
 
 // ==================== AUTO MAPPER ====================
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -17,7 +20,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5174")
+            policy.WithOrigins("http://localhost:5173")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -40,6 +43,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
