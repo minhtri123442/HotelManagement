@@ -1,0 +1,64 @@
+/* ===== LAYOUT TỔNG ===== */
+.dashboard-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #e8f3ff; /* xanh rất nhẹ */
+}
+
+/* ===== SIDEBAR KHÁCH HÀNG ===== */
+.customer-sidebar {
+  width: 220px;
+  background: #0d6efd; /* xanh dương chủ đạo */
+  padding: 20px 15px;
+  flex-shrink: 0;
+  color: white;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+}
+
+.customer-sidebar .logo {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  text-align: center;
+  color: #fff;
+}
+
+.customer-sidebar ul {
+  padding: 0;
+  list-style: none;
+}
+
+.customer-sidebar li {
+  padding: 12px 12px;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  gap: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: 0.25s;
+  color: #eaf2ff;
+}
+
+.customer-sidebar li:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+}
+
+.customer-sidebar li.active {
+  background: #fff;
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+/* ===== MAIN CONTENT ===== */
+.customer-main {
+  flex: 1;
+  overflow-y: auto;
+  background: #f5faff;
+  min-width: 0;
+  padding: 20px;
+}
