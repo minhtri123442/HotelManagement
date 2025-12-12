@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("Shift")]
-[Index("ShiftCode", Name = "UQ__Shift__9377D562FBD0D765", IsUnique = true)]
+[Index("ShiftCode", Name = "UQ__Shift__9377D56268620B32", IsUnique = true)]
 public partial class Shift
 {
     [Key]

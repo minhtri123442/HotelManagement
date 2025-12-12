@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("Room")]
-[Index("RoomCode", Name = "UQ__Room__4F9D5231FE5F2711", IsUnique = true)]
-[Index("RoomNumber", Name = "UQ__Room__AE10E07A98ABFE5B", IsUnique = true)]
+[Index("RoomCode", Name = "UQ__Room__4F9D5231ED9E7473", IsUnique = true)]
+[Index("RoomNumber", Name = "UQ__Room__AE10E07AD03F64A4", IsUnique = true)]
 public partial class Room
 {
     [Key]
@@ -36,12 +36,18 @@ public partial class Room
     [StringLength(200)]
     public string? Note { get; set; }
 
+    [StringLength(300)]
+    public string ImageUrl { get; set; } = null!;
+
     [InverseProperty("Room")]
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 
     [ForeignKey("HotelId")]
     [InverseProperty("Rooms")]
     public virtual Hotel Hotel { get; set; } = null!;
+
+    [InverseProperty("Room")]
+    public virtual ICollection<RoomImage> RoomImages { get; set; } = new List<RoomImage>();
 
     [InverseProperty("Room")]
     public virtual ICollection<RoomMaintenance> RoomMaintenances { get; set; } = new List<RoomMaintenance>();

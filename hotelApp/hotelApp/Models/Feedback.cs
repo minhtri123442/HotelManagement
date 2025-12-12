@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace hotelApp.Models;
 
 [Table("Feedback")]
-[Index("FeedbackCode", Name = "UQ__Feedback__BCE37B66675B40C6", IsUnique = true)]
+[Index("FeedbackCode", Name = "UQ__Feedback__BCE37B66C6F48077", IsUnique = true)]
 public partial class Feedback
 {
     [Key]

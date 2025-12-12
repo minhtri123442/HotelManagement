@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import { Link } from "react-router-dom";
 export default function HotelsList() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,12 +66,12 @@ export default function HotelsList() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <a
-          href="/hotels/add"
+        <Link
+          to="/rooms/add"
           className="px-4 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
         >
-          + Thêm khách sạn
-        </a>
+          + Thêm phòng
+        </Link>
       </div>
 
       {hotels.length === 0 ? (

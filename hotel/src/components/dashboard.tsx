@@ -16,7 +16,7 @@ export default function Dashboard() {
         <p className="text-xs uppercase font-semibold opacity-70 mb-1 text-blue-700">Quản lý</p>
         <MenuItem icon={<FaUserFriends />} label="Khách hàng" to="/customers" />
         <MenuItem icon={<FaBox />} label="Đơn hàng" />
-        <MenuItem icon={<FaBed />} label="Phòng" />
+        <MenuItem icon={<FaBed />} label="Phòng" to= "/rooms"/>
         <MenuItem icon={<FaHome />} label="Khách sạn" to= "/hotelsList"/>
         <MenuItem icon={<FaUserFriends />} label="Nhân viên" to="/employees" />
         <MenuItem icon={<FaConciergeBell />} label="Dịch vụ" />

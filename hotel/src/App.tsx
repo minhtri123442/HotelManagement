@@ -6,28 +6,32 @@ import EmployeeManagement from "./pages/frmQLNV";
 import HotelManagement from "./pages/Frm_DSKS";
 import FrmDangNhap from "./pages/frm_dangnhap";
 import FrmQLNV from "./pages/frm_QLNV";
-import Dashboard from "./components/dashboardtrangchu";
+import FrmQLRoom from "./pages/frm_QLroom";
 import HotelHome from "./pages/HotelHome";
+import FrmAddRoom from "./pages/frm_AddRoom";
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Layout chứa sidebar + nội dung */}
         <Route path="/" element={<Layout />}>
-          
-          {/* Trang con */}
-          <Route path="customers" element={<CustomerManagement />} />
 
-          {/* Nhân viên */}
+          <Route path="customers" element={<CustomerManagement />} />
           <Route path="employees" element={<EmployeeManagement />} />
-          {/* danh sách khách sạn */}
-          <Route path="hotelsList" element={<HotelManagement/>}/>
+          <Route path="hotelsList" element={<HotelManagement />} />
           <Route path="qlnv" element={<FrmQLNV />} />
+
+          {/* Danh sách phòng */}
+          <Route path="rooms" element={<FrmQLRoom />} />
+
+          {/* Thêm phòng */}
+          <Route path="rooms/add" element={<FrmAddRoom />} />
+
         </Route>
-          <Route path="/login" element={<FrmDangNhap />} />
-        {/* Trang chủ có menu trái + phòng bên phải */}
-        <Route path="/homepage" element={<HotelHome/>} />
+
+        <Route path="/login" element={<FrmDangNhap />} />
+        <Route path="/homepage" element={<HotelHome />} />
+
       </Routes>
     </BrowserRouter>
   );
