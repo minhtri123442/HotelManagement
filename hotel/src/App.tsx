@@ -8,7 +8,7 @@ import FrmDangNhap from "./pages/frm_dangnhap";
 import FrmQLNV from "./pages/frm_QLNV";
 import FrmQLRoom from "./pages/frm_QLroom";
 import HotelHome from "./pages/HotelHome";
-import FrmAddRoom from "./pages/frm_AddRoom";
+import FrmEditRoom from "./pages/frm_EditRoom";
 export default function App() {
   return (
     <BrowserRouter>
@@ -25,7 +25,7 @@ export default function App() {
           <Route path="rooms" element={<FrmQLRoom />} />
 
           {/* Thêm phòng */}
-          <Route path="rooms/add" element={<FrmAddRoom />} />
+          <Route path="rooms/edit/:id" element={<FrmEditRoom />} />
 
         </Route>
 

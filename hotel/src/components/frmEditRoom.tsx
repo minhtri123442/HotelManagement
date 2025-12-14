@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
-export default function FrmAddRoom() {
+export default function FrmEditRoom() {
+  const { id } = useParams(); // roomID
+  const navigate = useNavigate();
+
   const [roomCode, setRoomCode] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [hotelID, setHotelID] = useState("");
@@ -9,13 +13,16 @@ export default function FrmAddRoom() {
   const [status, setStatus] = useState("Empty");
   const [note, setNote] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [oldImage, setOldImage] = useState("");
 
-  const [hotels, setHotels] = useState([]);
-  const [roomTypes, setRoomTypes] = useState([]);
+  const [hotels, setHotels] = useState<any[]>([]);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
+
+  /* ================= LOAD DATA ================= */
 
   // Load khách sạn
   useEffect(() => {
-    fetch("http://localhost:5134/api/hotel/list")
+    fetch("http://localhost:5134/api/hotels")
       .then(res => res.json())
       .then(data => setHotels(data));
   }, []);
@@ -27,15 +34,31 @@ export default function FrmAddRoom() {
       .then(data => setRoomTypes(data));
   }, []);
 
+  // Load chi tiết phòng
+  useEffect(() => {
+    if (!id) return;
+
+    fetch(`http://localhost:5134/api/room/detail/${id}`)
+      .then(res => res.json())
+      .then(r => {
+        setRoomCode(r.roomCode);
+        setRoomNumber(r.roomNumber);
+        setHotelID(r.hotelID.toString());
+        setRoomTypeID(r.roomTypeID.toString());
+        setFloor(r.floor?.toString() || "");
+        setStatus(r.status);
+        setNote(r.note || "");
+        setOldImage(r.image);
+      });
+  }, [id]);
+
+  /* ================= SUBMIT ================= */
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (!roomCode || !roomNumber || !hotelID || !roomTypeID) {
-      alert("Vui lòng nhập đầy đủ thông tin!");
-      return;
-    }
-
     const formData = new FormData();
+    formData.append("RoomID", id!);
     formData.append("RoomCode", roomCode);
     formData.append("RoomNumber", roomNumber);
     formData.append("HotelID", hotelID);
@@ -48,45 +71,45 @@ export default function FrmAddRoom() {
       formData.append("ImageFile", imageFile);
     }
 
-    const res = await fetch("http://localhost:5134/api/room/add", {
-      method: "POST",
-      body: formData,
-    });
+    const res = await fetch(
+      `http://localhost:5134/api/room/update/${id}`,
+      {
+        method: "PUT",
+        body: formData,
+      }
+    );
 
     if (res.ok) {
-      alert("Thêm phòng thành công!");
-      window.location.href = "/rooms";
+      alert("Cập nhật phòng thành công!");
+      navigate("/rooms");
     } else {
-      const txt = await res.text();
-      alert("Lỗi: " + txt);
+      alert("Lỗi khi cập nhật phòng");
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <div className="p-4 max-w-xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">➕ Thêm phòng</h2>
+      <h2 className="text-xl font-bold mb-4">✏️ Sửa phòng</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
 
         <div>
-          <label>Mã phòng (RoomCode)</label>
+          <label>Mã phòng</label>
           <input
-            type="text"
             value={roomCode}
             onChange={(e) => setRoomCode(e.target.value)}
             className="border p-2 w-full rounded"
-            placeholder="Ví dụ: RM021"
           />
         </div>
 
         <div>
-          <label>Số phòng (RoomNumber)</label>
+          <label>Số phòng</label>
           <input
-            type="text"
             value={roomNumber}
             onChange={(e) => setRoomNumber(e.target.value)}
             className="border p-2 w-full rounded"
-            placeholder="101, 102..."
           />
         </div>
 
@@ -97,8 +120,8 @@ export default function FrmAddRoom() {
             onChange={(e) => setHotelID(e.target.value)}
             className="border p-2 w-full rounded"
           >
-            <option value="">-- Chọn khách sạn --</option>
-            {hotels.map((h: any) => (
+            <option value="">-- Chọn --</option>
+            {hotels.map(h => (
               <option key={h.hotelID} value={h.hotelID}>
                 {h.hotelName}
               </option>
@@ -113,8 +136,8 @@ export default function FrmAddRoom() {
             onChange={(e) => setRoomTypeID(e.target.value)}
             className="border p-2 w-full rounded"
           >
-            <option value="">-- Chọn loại phòng --</option>
-            {roomTypes.map((rt: any) => (
+            <option value="">-- Chọn --</option>
+            {roomTypes.map(rt => (
               <option key={rt.roomTypeID} value={rt.roomTypeID}>
                 {rt.typeName}
               </option>
@@ -154,8 +177,15 @@ export default function FrmAddRoom() {
           />
         </div>
 
+        {oldImage && (
+          <img
+            src={`http://localhost:5134/uploads/${oldImage}`}
+            className="w-32 rounded mb-2"
+          />
+        )}
+
         <div>
-          <label>Ảnh chính</label>
+          <label>Đổi ảnh (nếu có)</label>
           <input
             type="file"
             accept="image/*"
@@ -164,8 +194,8 @@ export default function FrmAddRoom() {
           />
         </div>
 
-        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-          Lưu phòng
+        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          Cập nhật phòng
         </button>
       </form>
     </div>

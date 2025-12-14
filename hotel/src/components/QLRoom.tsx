@@ -1,144 +1,169 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function RoomList() {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [hotels, setHotels] = useState<any[]>([]);
+  const [hotelID, setHotelID] = useState("");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Lấy danh sách phòng
+  /* ========== LOAD KHÁCH SẠN ========== */
   useEffect(() => {
-    fetch("http://localhost:5134/api/room/list")
-      .then(async (res) => {
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`HTTP ${res.status} - ${txt}`);
-        }
-        return res.json();
-      })
-      .then((data) => setRooms(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+    fetch("http://localhost:5134/api/hotels")
+      .then(res => res.json())
+      .then(data => setHotels(data));
   }, []);
 
-  // Tìm kiếm phòng theo RoomCode hoặc RoomNumber
-  useEffect(() => {
-    const delay = setTimeout(() => {
-      if (search === "") {
-        fetch("http://localhost:5134/api/room/list")
-          .then((res) => res.json())
-          .then((data) => setRooms(data));
-        return;
-      }
-
-      fetch(
-        `http://localhost:5134/api/room/search?keyword=${encodeURIComponent(
-          search
-        )}`
-      )
-        .then((res) => res.json())
-        .then((data) => setRooms(data || []));
-    }, 300);
-
-    return () => clearTimeout(delay);
-  }, [search]);
-
-  const handleDelete = (id: number) => {
-    if (!window.confirm("Xóa phòng này?")) return;
-
-    fetch(`http://localhost:5134/api/room/delete/${id}`, {
-      method: "DELETE",
-    })
-      .then((res) => res.text())
-      .then(() => {
-        setRooms((prev) => prev.filter((x: any) => x.roomID !== id));
-      });
+  /* ========== LOAD PHÒNG ========== */
+  const loadRooms = (url: string) => {
+    setLoading(true);
+    fetch(url)
+      .then(res => res.json())
+      .then(data => setRooms(data))
+      .finally(() => setLoading(false));
   };
 
-  if (loading) return <div>Đang tải dữ liệu phòng...</div>;
-  if (error) return <div className="text-red-500">Lỗi: {error}</div>;
+  useEffect(() => {
+    loadRooms("http://localhost:5134/api/room/list");
+  }, []);
 
+  /* ========== FILTER ========== */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (hotelID) {
+        loadRooms(`http://localhost:5134/api/room/by-hotel/${hotelID}`);
+      } else if (search) {
+        loadRooms(
+          `http://localhost:5134/api/room/search?keyword=${encodeURIComponent(search)}`
+        );
+      } else {
+        loadRooms("http://localhost:5134/api/room/list");
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [hotelID, search]);
+
+
+  /* ========== UI ========== */
   return (
-    <div className="p-4">
-      {/* ======= Thanh tìm kiếm + nút Thêm ======= */}
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">🏨 Quản lý phòng</h2>
+
+      {/* ===== FILTER BAR ===== */}
+      <div className="bg-white shadow rounded-lg p-4 mb-4 flex gap-4 items-center">
+        <select
+          value={hotelID}
+          onChange={e => setHotelID(e.target.value)}
+          className="border px-3 py-2 rounded w-60"
+        >
+          <option value="">-- Tất cả khách sạn --</option>
+          {hotels.map(h => (
+            <option key={h.hotelID} value={h.hotelID}>
+              {h.name}
+            </option>
+          ))}
+        </select>
+
         <input
           type="text"
-          placeholder="Tìm kiếm phòng..."
-          className="border px-3 py-2 rounded text-sm w-60"
+          placeholder="Tìm RoomCode / RoomNumber..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
+          className="border px-3 py-2 rounded w-60"
         />
-
-        <a
-          href="/rooms/add"
-          className="px-4 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-        >
-          + Thêm phòng
-        </a>
       </div>
 
-      {rooms.length === 0 ? (
-        <div>Không có phòng nào.</div>
+      {/* ===== TABLE ===== */}
+      {loading ? (
+        <div>Đang tải dữ liệu...</div>
+      ) : rooms.length === 0 ? (
+        <div>Không có phòng.</div>
       ) : (
-        <table className="w-full border border-gray-400 border-collapse text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2">RoomCode</th>
-              <th className="border p-2">RoomNumber</th>
-              <th className="border p-2">Hotel</th>
-              <th className="border p-2">Room Type</th>
-              <th className="border p-2">Floor</th>
-              <th className="border p-2">Status</th>
-              <th className="border p-2">Note</th>
-              <th className="border p-2">Image</th>
-              <th className="border p-2">Chức năng</th>
-            </tr>
-          </thead>
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          {/* ===== TABLE ===== */}
+          {loading ? (
+            <div className="text-gray-500">Đang tải dữ liệu...</div>
+          ) : rooms.length === 0 ? (
+            <div className="text-gray-500">Không có phòng.</div>
+          ) : (
+            <div className="bg-white shadow-md rounded-xl overflow-hidden">
+              <table className="w-full text-sm text-gray-700">
+                <thead className="bg-slate-100 text-slate-700 uppercase text-xs">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Room Code</th>
+                    <th className="px-4 py-3 text-center">Number</th>
+                    <th className="px-4 py-3 text-left">Hotel</th>
+                    <th className="px-4 py-3 text-left">Type</th>
+                    <th className="px-4 py-3 text-center">Floor</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3 text-center">Image</th>
+                    <th className="px-4 py-3 text-center">Action</th>
+                  </tr>
+                </thead>
 
-          <tbody>
-            {rooms.map((r: any) => (
-              <tr key={r.roomID} className="hover:bg-gray-50">
-                <td className="border p-2">{r.roomCode}</td>
-                <td className="border p-2">{r.roomNumber}</td>
-                <td className="border p-2">{r.hotelName}</td>
-                <td className="border p-2">{r.roomTypeName}</td>
-                <td className="border p-2">{r.floor}</td>
-                <td className="border p-2">{r.status}</td>
-                <td className="border p-2">{r.note}</td>
+                <tbody className="divide-y">
+  {rooms.map((r) => (
+    <tr
+      key={r.roomId}
+      className="hover:bg-slate-50 transition"
+    >
+      <td className="px-4 py-3 font-semibold">
+        {r.roomCode}
+      </td>
 
-                <td className="border p-2 text-center">
-                  {r.imageUrl ? (
-                    <img
-                      src={`http://localhost:5134${r.imageUrl}`}
-                      className="w-[100px] h-[80px] object-cover rounded"
-                    />
-                  ) : (
-                    <span>Không ảnh</span>
-                  )}
-                </td>
+      <td className="px-4 py-3 text-center">
+        {r.roomNumber}
+      </td>
 
-                <td className="border p-2">
-                  <div className="flex gap-2">
-                    <a
-                      href={`/rooms/edit/${r.roomID}`}
-                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                    >
-                      Sửa
-                    </a>
+      <td className="px-4 py-3">
+        {r.hotelName}
+      </td>
 
-                    <button
-                      onClick={() => handleDelete(r.roomID)}
-                      className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <td className="px-4 py-3">
+        {r.roomTypeName}
+      </td>
+
+      <td className="px-4 py-3 text-center">
+        {r.floor}
+      </td>
+
+      <td className="px-4 py-3 text-center">
+        <span className="px-3 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">
+          {r.status}
+        </span>
+      </td>
+
+      <td className="px-4 py-3 text-center">
+        {r.imageUrl ? (
+          <img
+            src={`http://localhost:5134${r.imageUrl}`}
+            className="w-20 h-14 object-cover rounded-lg mx-auto"
+          />
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </td>
+
+      <td className="px-4 py-3 text-center">
+        <Link
+          to={`/rooms/edit/${r.roomId}`}
+          className="inline-flex items-center justify-center
+                     w-20 h-10 bg-green-600 text-white
+                     rounded-md text-xs hover:bg-green-700"
+        >
+          Sửa
+        </Link>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+              </table>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

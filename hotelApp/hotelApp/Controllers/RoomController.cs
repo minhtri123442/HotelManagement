@@ -19,12 +19,7 @@ public class RoomController : ControllerBase
         return Ok(await _repo.GetRoomsAsync());
     }
 
-    [HttpPost("add")]
-    public async Task<IActionResult> AddRoom(Room room)
-    {
-        var res = await _repo.AddRoomAsync(room);
-        return Ok(res);
-    }
+    
 
     [HttpPut("update")]
     public async Task<IActionResult> UpdateRoom(Room room)
@@ -33,12 +28,12 @@ public class RoomController : ControllerBase
         if (!ok) return NotFound();
         return Ok("Updated");
     }
-
-    [HttpDelete("delete/{id}")]
-    public async Task<IActionResult> DeleteRoom(int id)
+    [HttpGet("by-hotel/{hotelId}")]
+    public async Task<IActionResult> GetRoomsByHotel(int hotelId)
     {
-        bool ok = await _repo.DeleteRoomAsync(id);
-        if (!ok) return NotFound();
-        return Ok("Deleted");
+        var rooms = await _repo.GetRoomsByHotelAsync(hotelId);
+        return Ok(rooms);
     }
+
+
 }

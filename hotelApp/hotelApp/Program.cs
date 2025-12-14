@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ==================== DB CONTEXT ====================
 builder.Services.AddDbContext<HotelContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<HotelReposity>();
+builder.Services.AddScoped<IHotelReposity,HotelReposity>();
 builder.Services.AddScoped<RoomRepository>();
 
 

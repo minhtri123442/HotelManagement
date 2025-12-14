@@ -40,15 +40,6 @@ namespace hotelApp.Reposities
             return "RM" + count.ToString("000");
         }
 
-        // Thêm phòng
-        public async Task<Room> AddRoomAsync(Room room)
-        {
-            room.RoomCode = GenerateRoomCode();
-            _db.Rooms.Add(room);
-            await _db.SaveChangesAsync();
-            return room;
-        }
-
         // Sửa phòng
         public async Task<bool> UpdateRoomAsync(Room updated)
         {
@@ -66,16 +57,28 @@ namespace hotelApp.Reposities
             return true;
         }
 
-        // Xóa phòng
-        public async Task<bool> DeleteRoomAsync(int id)
+        public async Task<List<RoomDto>> GetRoomsByHotelAsync(int hotelId)
         {
-            var room = await _db.Rooms.FindAsync(id);
-            if (room == null) return false;
-
-            _db.Rooms.Remove(room);
-            await _db.SaveChangesAsync();
-            return true;
+            return await _db.Rooms
+                .Include(r => r.Hotel)
+                .Include(r => r.RoomType)
+                .Where(r => r.HotelId == hotelId)
+                .Select(r => new RoomDto
+                {
+                    RoomID = r.RoomId,
+                    RoomCode = r.RoomCode,
+                    RoomNumber = r.RoomNumber,
+                    Floor = r.Floor,
+                    Status = r.Status,
+                    Note = r.Note,
+                    HotelName = r.Hotel.Name,
+                    RoomTypeName = r.RoomType.TypeName,
+                    ImageUrl = r.ImageUrl
+                })
+                .ToListAsync();
         }
+
+
     }
 
 }
