@@ -6,34 +6,46 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Models;
 
-[Table("RoomType")]
-[Index("RoomTypeCode", Name = "UQ__RoomType__F06AB9531ECEF9E2", IsUnique = true)]
 public partial class RoomType
 {
     [Key]
     [Column("RoomTypeID")]
     public int RoomTypeId { get; set; }
 
-    [StringLength(10)]
-    [Unicode(false)]
-    public string RoomTypeCode { get; set; } = null!;
+    [Column("HotelID")]
+    public int HotelId { get; set; }
 
     [StringLength(100)]
-    public string TypeName { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
-    [StringLength(300)]
     public string? Description { get; set; }
 
     [Column(TypeName = "decimal(18, 2)")]
-    public decimal PricePerNight { get; set; }
+    public decimal BasePrice { get; set; }
 
-    [Column(TypeName = "decimal(18, 2)")]
-    public decimal? PricePerHour { get; set; }
+    public int? MaxAdults { get; set; }
 
-    public int MaxAdult { get; set; }
+    public int? MaxChildren { get; set; }
 
-    public int MaxChild { get; set; }
+    [Column(TypeName = "decimal(10, 2)")]
+    public decimal? RoomArea { get; set; }
+
+    [StringLength(100)]
+    public string? BedType { get; set; }
+
+    public int? Quantity { get; set; }
 
     [InverseProperty("RoomType")]
-    public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();
+    public virtual ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
+
+    [ForeignKey("HotelId")]
+    [InverseProperty("RoomTypes")]
+    public virtual Hotel Hotel { get; set; } = null!;
+
+    [InverseProperty("RoomType")]
+    public virtual ICollection<RoomAvailability> RoomAvailabilities { get; set; } = new List<RoomAvailability>();
+
+    [ForeignKey("RoomTypeId")]
+    [InverseProperty("RoomTypes")]
+    public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
 }

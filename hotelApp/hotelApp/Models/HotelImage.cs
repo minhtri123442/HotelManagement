@@ -15,13 +15,13 @@ public partial class HotelImage
     [Column("HotelID")]
     public int HotelId { get; set; }
 
-    [StringLength(300)]
+    [StringLength(500)]
     public string ImageUrl { get; set; } = null!;
 
     public bool? IsMain { get; set; }
 
-    [Column(TypeName = "datetime")]
-    public DateTime? CreatedAt { get; set; }
+    [StringLength(100)]
+    public string? Caption { get; set; }
 
     [ForeignKey("HotelId")]
     [InverseProperty("HotelImages")]

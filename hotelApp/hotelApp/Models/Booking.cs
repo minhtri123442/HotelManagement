@@ -6,66 +6,52 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Models;
 
-[Table("Booking")]
-[Index("BookingCode", Name = "UQ__Booking__C6E56BD5E2E396B6", IsUnique = true)]
+[Index("BookingCode", Name = "UQ__Bookings__C6E56BD5DDE6DA1C", IsUnique = true)]
 public partial class Booking
 {
     [Key]
     [Column("BookingID")]
     public int BookingId { get; set; }
 
-    [StringLength(10)]
+    [StringLength(20)]
     [Unicode(false)]
     public string BookingCode { get; set; } = null!;
 
-    [Column("CustomerID")]
-    public int CustomerId { get; set; }
+    [Column("UserID")]
+    public int UserId { get; set; }
 
-    [Column("RoomID")]
-    public int RoomId { get; set; }
+    [Column("HotelID")]
+    public int HotelId { get; set; }
 
-    [Column(TypeName = "datetime")]
-    public DateTime? CheckInDate { get; set; }
-
-    [Column(TypeName = "datetime")]
-    public DateTime? CheckOutDate { get; set; }
-
-    [Column(TypeName = "datetime")]
     public DateTime? BookingDate { get; set; }
 
+    public DateOnly CheckInDate { get; set; }
+
+    public DateOnly CheckOutDate { get; set; }
+
     [Column(TypeName = "decimal(18, 2)")]
-    public decimal? Deposit { get; set; }
+    public decimal TotalAmount { get; set; }
 
-    public int NumberOfAdult { get; set; }
-
-    public int NumberOfChild { get; set; }
-
-    [StringLength(20)]
+    [StringLength(50)]
     public string? Status { get; set; }
 
-    [StringLength(200)]
-    public string? Note { get; set; }
+    [StringLength(50)]
+    public string? PaymentStatus { get; set; }
+
+    [StringLength(500)]
+    public string? SpecialRequest { get; set; }
 
     [InverseProperty("Booking")]
-    public virtual ICollection<CheckHistory> CheckHistories { get; set; } = new List<CheckHistory>();
+    public virtual ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
 
-    [ForeignKey("CustomerId")]
+    [ForeignKey("HotelId")]
     [InverseProperty("Bookings")]
-    public virtual Customer Customer { get; set; } = null!;
+    public virtual Hotel Hotel { get; set; } = null!;
 
     [InverseProperty("Booking")]
-    public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
+    public virtual Review? Review { get; set; }
 
-    [InverseProperty("Booking")]
-    public virtual ICollection<Guest> Guests { get; set; } = new List<Guest>();
-
-    [InverseProperty("Booking")]
-    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
-
-    [ForeignKey("RoomId")]
+    [ForeignKey("UserId")]
     [InverseProperty("Bookings")]
-    public virtual Room Room { get; set; } = null!;
-
-    [InverseProperty("Booking")]
-    public virtual ICollection<ServiceDetail> ServiceDetails { get; set; } = new List<ServiceDetail>();
+    public virtual User User { get; set; } = null!;
 }

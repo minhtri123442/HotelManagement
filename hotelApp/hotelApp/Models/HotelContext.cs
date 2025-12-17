@@ -15,45 +15,27 @@ public partial class HotelContext : DbContext
     {
     }
 
-    public virtual DbSet<Attendance> Attendances { get; set; }
+    public virtual DbSet<Amenity> Amenities { get; set; }
 
     public virtual DbSet<Booking> Bookings { get; set; }
 
-    public virtual DbSet<CheckHistory> CheckHistories { get; set; }
-
-    public virtual DbSet<Customer> Customers { get; set; }
-
-    public virtual DbSet<Employee> Employees { get; set; }
-
-    public virtual DbSet<Feedback> Feedbacks { get; set; }
-
-    public virtual DbSet<Guest> Guests { get; set; }
+    public virtual DbSet<BookingDetail> BookingDetails { get; set; }
 
     public virtual DbSet<Hotel> Hotels { get; set; }
 
     public virtual DbSet<HotelImage> HotelImages { get; set; }
 
-    public virtual DbSet<Invoice> Invoices { get; set; }
-
-    public virtual DbSet<InvoiceDetail> InvoiceDetails { get; set; }
+    public virtual DbSet<Location> Locations { get; set; }
 
     public virtual DbSet<Promotion> Promotions { get; set; }
 
-    public virtual DbSet<Room> Rooms { get; set; }
+    public virtual DbSet<Review> Reviews { get; set; }
 
-    public virtual DbSet<RoomMaintenance> RoomMaintenances { get; set; }
+    public virtual DbSet<RoomAvailability> RoomAvailabilities { get; set; }
 
     public virtual DbSet<RoomType> RoomTypes { get; set; }
 
-    public virtual DbSet<Salary> Salaries { get; set; }
-
-    public virtual DbSet<SalaryDetail> SalaryDetails { get; set; }
-
-    public virtual DbSet<Service> Services { get; set; }
-
-    public virtual DbSet<ServiceDetail> ServiceDetails { get; set; }
-
-    public virtual DbSet<Shift> Shifts { get; set; }
+    public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -61,217 +43,162 @@ public partial class HotelContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Attendance>(entity =>
+        modelBuilder.Entity<Amenity>(entity =>
         {
-            entity.HasKey(e => e.AttendanceId).HasName("PK__Attendan__8B69263C5B2293E5");
-
-            entity.Property(e => e.Status).HasDefaultValue("Có mặt");
-
-            entity.HasOne(d => d.Employee).WithMany(p => p.Attendances)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Attendanc__Emplo__01142BA1");
-
-            entity.HasOne(d => d.Shift).WithMany(p => p.Attendances)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Attendanc__Shift__02084FDA");
+            entity.HasKey(e => e.AmenityId).HasName("PK__Amenitie__842AF52B7DE0EDE7");
         });
 
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.BookingId).HasName("PK__Booking__73951ACD22DFB0CD");
+            entity.HasKey(e => e.BookingId).HasName("PK__Bookings__73951ACDF740C4D2");
 
             entity.Property(e => e.BookingDate).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Deposit).HasDefaultValue(0m);
-            entity.Property(e => e.Status).HasDefaultValue("Booked");
+            entity.Property(e => e.PaymentStatus).HasDefaultValue("Unpaid");
+            entity.Property(e => e.Status).HasDefaultValue("Confirmed");
 
-            entity.HasOne(d => d.Customer).WithMany(p => p.Bookings)
+            entity.HasOne(d => d.Hotel).WithMany(p => p.Bookings)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Booking__Custome__5AEE82B9");
+                .HasConstraintName("FK__Bookings__HotelI__628FA481");
 
-            entity.HasOne(d => d.Room).WithMany(p => p.Bookings)
+            entity.HasOne(d => d.User).WithMany(p => p.Bookings)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Booking__RoomID__5BE2A6F2");
+                .HasConstraintName("FK__Bookings__UserID__619B8048");
         });
 
-        modelBuilder.Entity<CheckHistory>(entity =>
+        modelBuilder.Entity<BookingDetail>(entity =>
         {
-            entity.HasKey(e => e.HistoryId).HasName("PK__CheckHis__4D7B4ADDC3CC1F3F");
+            entity.HasKey(e => e.DetailId).HasName("PK__BookingD__135C314DDF0A7DCB");
 
-            entity.Property(e => e.ActionDate).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Quantity).HasDefaultValue(1);
 
-            entity.HasOne(d => d.Booking).WithMany(p => p.CheckHistories)
+            entity.HasOne(d => d.Booking).WithMany(p => p.BookingDetails)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CheckHist__Booki__787EE5A0");
+                .HasConstraintName("FK__BookingDe__Booki__66603565");
 
-            entity.HasOne(d => d.Employee).WithMany(p => p.CheckHistories).HasConstraintName("FK__CheckHist__Emplo__797309D9");
-        });
-
-        modelBuilder.Entity<Customer>(entity =>
-        {
-            entity.HasKey(e => e.CustomerId).HasName("PK__Customer__A4AE64B8CB946CF7");
-
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
-        });
-
-        modelBuilder.Entity<Employee>(entity =>
-        {
-            entity.HasKey(e => e.EmployeeId).HasName("PK__Employee__7AD04FF10505D1D3");
-
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
-        });
-
-        modelBuilder.Entity<Feedback>(entity =>
-        {
-            entity.HasKey(e => e.FeedbackId).HasName("PK__Feedback__6A4BEDF682B4EC69");
-
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
-
-            entity.HasOne(d => d.Booking).WithMany(p => p.Feedbacks).HasConstraintName("FK__Feedback__Bookin__14270015");
-
-            entity.HasOne(d => d.Customer).WithMany(p => p.Feedbacks).HasConstraintName("FK__Feedback__Custom__1332DBDC");
-        });
-
-        modelBuilder.Entity<Guest>(entity =>
-        {
-            entity.HasKey(e => e.GuestId).HasName("PK__Guest__0C423C3291F253FB");
-
-            entity.HasOne(d => d.Booking).WithMany(p => p.Guests)
+            entity.HasOne(d => d.RoomType).WithMany(p => p.BookingDetails)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Guest__BookingID__1AD3FDA4");
+                .HasConstraintName("FK__BookingDe__RoomT__6754599E");
         });
 
         modelBuilder.Entity<Hotel>(entity =>
         {
-            entity.HasKey(e => e.HotelId).HasName("PK__Hotel__46023BBFC6103A08");
+            entity.HasKey(e => e.HotelId).HasName("PK__Hotels__46023BBF6AD606BF");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.StarRating).HasDefaultValue(0);
             entity.Property(e => e.Status).HasDefaultValue("Active");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.Hotels)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Hotels__Location__3E52440B");
+
+            entity.HasMany(d => d.Amenities).WithMany(p => p.Hotels)
+                .UsingEntity<Dictionary<string, object>>(
+                    "HotelAmenity",
+                    r => r.HasOne<Amenity>().WithMany()
+                        .HasForeignKey("AmenityId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__HotelAmen__Ameni__440B1D61"),
+                    l => l.HasOne<Hotel>().WithMany()
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__HotelAmen__Hotel__4316F928"),
+                    j =>
+                    {
+                        j.HasKey("HotelId", "AmenityId").HasName("PK__HotelAme__EE4094ED48EC9AD2");
+                        j.ToTable("HotelAmenities");
+                        j.IndexerProperty<int>("HotelId").HasColumnName("HotelID");
+                        j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
+                    });
         });
 
         modelBuilder.Entity<HotelImage>(entity =>
         {
-            entity.HasKey(e => e.ImageId).HasName("PK__HotelIma__7516F4EC5C02EC24");
+            entity.HasKey(e => e.ImageId).HasName("PK__HotelIma__7516F4ECC64E0030");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsMain).HasDefaultValue(false);
 
-            entity.HasOne(d => d.Hotel).WithMany(p => p.HotelImages).HasConstraintName("FK__HotelImag__Hotel__3F466844");
+            entity.HasOne(d => d.Hotel).WithMany(p => p.HotelImages).HasConstraintName("FK__HotelImag__Hotel__47DBAE45");
         });
 
-        modelBuilder.Entity<Invoice>(entity =>
+        modelBuilder.Entity<Location>(entity =>
         {
-            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoice__D796AAD5E41E8628");
+            entity.HasKey(e => e.LocationId).HasName("PK__Location__E7FEA47769C58152");
 
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Discount).HasDefaultValue(0m);
-            entity.Property(e => e.FinalAmount).HasDefaultValue(0m);
-            entity.Property(e => e.Status).HasDefaultValue("Unpaid");
-            entity.Property(e => e.Tax).HasDefaultValue(0m);
-            entity.Property(e => e.TotalRoomCharge).HasDefaultValue(0m);
-            entity.Property(e => e.TotalServiceCharge).HasDefaultValue(0m);
-
-            entity.HasOne(d => d.Booking).WithMany(p => p.Invoices)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Invoice__Booking__6EF57B66");
-        });
-
-        modelBuilder.Entity<InvoiceDetail>(entity =>
-        {
-            entity.HasKey(e => e.InvoiceDetailId).HasName("PK__InvoiceD__1F1578F1BFDD3FE0");
-
-            entity.Property(e => e.Quantity).HasDefaultValue(1);
-            entity.Property(e => e.SubTotal).HasComputedColumnSql("([Quantity]*[UnitPrice])", true);
-
-            entity.HasOne(d => d.Invoice).WithMany(p => p.InvoiceDetails)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__InvoiceDe__Invoi__73BA3083");
+            entity.Property(e => e.IsPopular).HasDefaultValue(false);
         });
 
         modelBuilder.Entity<Promotion>(entity =>
         {
-            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__52C42F2F62752000");
+            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__52C42F2F47A808C7");
         });
 
-        modelBuilder.Entity<Room>(entity =>
+        modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.RoomId).HasName("PK__Room__3286391998F894B5");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79AE0EF96EE7");
 
-            entity.Property(e => e.Status).HasDefaultValue("Empty");
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.Hotel).WithMany(p => p.Rooms)
+            entity.HasOne(d => d.Booking).WithOne(p => p.Review)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Room__HotelID__4F7CD00D");
+                .HasConstraintName("FK__Reviews__Booking__6D0D32F4");
 
-            entity.HasOne(d => d.RoomType).WithMany(p => p.Rooms)
+            entity.HasOne(d => d.Hotel).WithMany(p => p.Reviews)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Room__RoomTypeID__4E88ABD4");
+                .HasConstraintName("FK__Reviews__HotelID__6E01572D");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Reviews)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Reviews__UserID__6EF57B66");
         });
 
-        modelBuilder.Entity<RoomMaintenance>(entity =>
+        modelBuilder.Entity<RoomAvailability>(entity =>
         {
-            entity.HasKey(e => e.MaintenanceId).HasName("PK__RoomMain__E60542B54A588FEE");
+            entity.HasKey(e => e.AvailabilityId).HasName("PK__RoomAvai__DA397991754DB310");
 
-            entity.Property(e => e.Status).HasDefaultValue("Pending");
+            entity.Property(e => e.IsClosed).HasDefaultValue(false);
 
-            entity.HasOne(d => d.Room).WithMany(p => p.RoomMaintenances)
+            entity.HasOne(d => d.RoomType).WithMany(p => p.RoomAvailabilities)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__RoomMaint__RoomI__1F98B2C1");
+                .HasConstraintName("FK__RoomAvail__RoomT__5629CD9C");
         });
 
         modelBuilder.Entity<RoomType>(entity =>
         {
-            entity.HasKey(e => e.RoomTypeId).HasName("PK__RoomType__BCC8961155B11585");
+            entity.HasKey(e => e.RoomTypeId).HasName("PK__RoomType__BCC89611AA027F7D");
 
-            entity.Property(e => e.MaxAdult).HasDefaultValue(2);
-            entity.Property(e => e.MaxChild).HasDefaultValue(1);
+            entity.Property(e => e.MaxAdults).HasDefaultValue(2);
+            entity.Property(e => e.MaxChildren).HasDefaultValue(1);
+            entity.Property(e => e.Quantity).HasDefaultValue(1);
+
+            entity.HasOne(d => d.Hotel).WithMany(p => p.RoomTypes).HasConstraintName("FK__RoomTypes__Hotel__4D94879B");
+
+            entity.HasMany(d => d.Amenities).WithMany(p => p.RoomTypes)
+                .UsingEntity<Dictionary<string, object>>(
+                    "RoomTypeAmenity",
+                    r => r.HasOne<Amenity>().WithMany()
+                        .HasForeignKey("AmenityId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__RoomTypeA__Ameni__5165187F"),
+                    l => l.HasOne<RoomType>().WithMany()
+                        .HasForeignKey("RoomTypeId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__RoomTypeA__RoomT__5070F446"),
+                    j =>
+                    {
+                        j.HasKey("RoomTypeId", "AmenityId").HasName("PK__RoomType__148A39438E1F4ED3");
+                        j.ToTable("RoomTypeAmenities");
+                        j.IndexerProperty<int>("RoomTypeId").HasColumnName("RoomTypeID");
+                        j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
+                    });
         });
 
-        modelBuilder.Entity<Salary>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.SalaryId).HasName("PK__Salary__4BE204B7A578A630");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC44925B7F");
 
-            entity.Property(e => e.Bonus).HasDefaultValue(0m);
-            entity.Property(e => e.Othours).HasDefaultValue(0);
-            entity.Property(e => e.Penalty).HasDefaultValue(0m);
-            entity.Property(e => e.WorkingDays).HasDefaultValue(0);
-
-            entity.HasOne(d => d.Employee).WithMany(p => p.Salaries)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Salary__Employee__09A971A2");
-        });
-
-        modelBuilder.Entity<SalaryDetail>(entity =>
-        {
-            entity.HasKey(e => e.SalaryDetailId).HasName("PK__SalaryDe__EE7B1FE465B5830A");
-
-            entity.HasOne(d => d.Salary).WithMany(p => p.SalaryDetails)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__SalaryDet__Salar__0D7A0286");
-        });
-
-        modelBuilder.Entity<Service>(entity =>
-        {
-            entity.HasKey(e => e.ServiceId).HasName("PK__Service__C51BB0EA97D6864B");
-        });
-
-        modelBuilder.Entity<ServiceDetail>(entity =>
-        {
-            entity.HasKey(e => e.ServiceDetailId).HasName("PK__ServiceD__6F80952CD5612F7D");
-
-            entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
-
-            entity.HasOne(d => d.Booking).WithMany(p => p.ServiceDetails)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServiceDe__Booki__6383C8BA");
-
-            entity.HasOne(d => d.Service).WithMany(p => p.ServiceDetails)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServiceDe__Servi__6477ECF3");
-        });
-
-        modelBuilder.Entity<Shift>(entity =>
-        {
-            entity.HasKey(e => e.ShiftId).HasName("PK__Shift__C0A838E113A14678");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Role).HasDefaultValue("Customer");
         });
 
         OnModelCreatingPartial(modelBuilder);

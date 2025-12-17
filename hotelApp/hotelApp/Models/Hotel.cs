@@ -6,52 +6,63 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Models;
 
-[Table("Hotel")]
-[Index("HotelCode", Name = "UQ__Hotel__175CAD58748CE9F7", IsUnique = true)]
+[Index("Slug", Name = "UQ__Hotels__BC7B5FB6903D4534", IsUnique = true)]
 public partial class Hotel
 {
     [Key]
     [Column("HotelID")]
     public int HotelId { get; set; }
 
-    [StringLength(10)]
-    [Unicode(false)]
-    public string HotelCode { get; set; } = null!;
-
     [StringLength(200)]
     public string Name { get; set; } = null!;
+
+    [StringLength(250)]
+    public string Slug { get; set; } = null!;
 
     [StringLength(300)]
     public string Address { get; set; } = null!;
 
-    [StringLength(100)]
-    public string City { get; set; } = null!;
+    [Column("LocationID")]
+    public int LocationId { get; set; }
 
-    [StringLength(100)]
-    public string Country { get; set; } = null!;
-
-    [StringLength(20)]
-    [Unicode(false)]
-    public string? Phone { get; set; }
-
-    [StringLength(100)]
-    public string? Email { get; set; }
-
-    [StringLength(500)]
     public string? Description { get; set; }
 
-    [StringLength(50)]
+    public int? StarRating { get; set; }
+
+    public TimeOnly? CheckInTime { get; set; }
+
+    public TimeOnly? CheckOutTime { get; set; }
+
+    [StringLength(20)]
     public string? Status { get; set; }
 
-    [StringLength(300)]
-    public string? MainImageUrl { get; set; }
+    [Column(TypeName = "decimal(9, 6)")]
+    public decimal? MapLatitude { get; set; }
 
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "decimal(9, 6)")]
+    public decimal? MapLongitude { get; set; }
+
+    public string? MapUrl { get; set; }
+
     public DateTime? CreatedAt { get; set; }
+
+    [InverseProperty("Hotel")]
+    public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 
     [InverseProperty("Hotel")]
     public virtual ICollection<HotelImage> HotelImages { get; set; } = new List<HotelImage>();
 
+    [ForeignKey("LocationId")]
+    [InverseProperty("Hotels")]
+    public virtual Location Location { get; set; } = null!;
+
     [InverseProperty("Hotel")]
-    public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+    [InverseProperty("Hotel")]
+    public virtual ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
+
+    [ForeignKey("HotelId")]
+    [InverseProperty("Hotels")]
+    public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
 }

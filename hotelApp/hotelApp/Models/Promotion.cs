@@ -6,24 +6,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Models;
 
-[Table("Promotion")]
-[Index("PromotionCode", Name = "UQ__Promotio__A617E4B6EF2AE404", IsUnique = true)]
+[Index("Code", Name = "UQ__Promotio__A25C5AA7940CCF9A", IsUnique = true)]
 public partial class Promotion
 {
     [Key]
     [Column("PromotionID")]
     public int PromotionId { get; set; }
 
-    [StringLength(10)]
+    [StringLength(20)]
     [Unicode(false)]
-    public string PromotionCode { get; set; } = null!;
+    public string? Code { get; set; }
 
-    [StringLength(200)]
-    public string? Description { get; set; }
+    [StringLength(20)]
+    public string? DiscountType { get; set; }
 
-    public int? DiscountPercent { get; set; }
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal? DiscountValue { get; set; }
 
     public DateOnly? StartDate { get; set; }
 
     public DateOnly? EndDate { get; set; }
+
+    public int? MaxUsage { get; set; }
+
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal? MinBookingAmount { get; set; }
 }

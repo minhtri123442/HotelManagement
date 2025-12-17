@@ -3,23 +3,24 @@ import Layout from "./components/mainlayout";
 import CustomerManagement from "./pages/frmQLKH";
 import EmployeeManagement from "./pages/frmQLNV";
 import HotelManagement from "./pages/Frm_DSKS";
+import AddHotel from "./components/AddHotel";
+import AdHotelDetail from "./components/AdminHotelDetail";
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* Layout chứa sidebar + nội dung */}
         <Route path="/" element={<Layout />}>
-          
           {/* Trang con */}
           <Route path="customers" element={<CustomerManagement />} />
 
           {/* Nhân viên */}
           <Route path="employees" element={<EmployeeManagement />} />
           {/* danh sách khách sạn */}
-          <Route path="hotelsList" element={<HotelManagement/>}/>
+          <Route path="hotelsList" element={<HotelManagement />} />
+          <Route path="/hotels/add" element={<AddHotel />} />
+          <Route path="/hotels/detail/:id" element={<AdHotelDetail />} />
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

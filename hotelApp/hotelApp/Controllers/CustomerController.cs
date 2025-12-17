@@ -18,7 +18,7 @@ namespace hotelApp.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCustomers()
         {
-            var customers = await _context.Customers.ToListAsync();
+            var customers = await _context.Users.ToListAsync();
             return Ok(customers);
         }
     }
