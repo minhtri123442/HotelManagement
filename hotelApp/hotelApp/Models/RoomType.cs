@@ -35,6 +35,9 @@ public partial class RoomType
 
     public int? Quantity { get; set; }
 
+    [StringLength(500)]
+    public string? ThumbnailUrl { get; set; }
+
     [InverseProperty("RoomType")]
     public virtual ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
 
@@ -44,6 +47,9 @@ public partial class RoomType
 
     [InverseProperty("RoomType")]
     public virtual ICollection<RoomAvailability> RoomAvailabilities { get; set; } = new List<RoomAvailability>();
+
+    [InverseProperty("RoomType")]
+    public virtual ICollection<RoomTypeImage> RoomTypeImages { get; set; } = new List<RoomTypeImage>();
 
     [ForeignKey("RoomTypeId")]
     [InverseProperty("RoomTypes")]

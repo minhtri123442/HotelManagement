@@ -24,14 +24,14 @@ namespace hotelApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(RoomDto dto)
+        public async Task<IActionResult> Create(RoomTypeDto dto)
         {
             var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.RoomID }, created);
+            return CreatedAtAction(nameof(Get), new { id = created.RoomTypeID }, created);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, RoomDto dto)
+        public async Task<IActionResult> Update(int id, RoomTypeDto dto)
         {
             var ok = await _service.UpdateAsync(id, dto);
             if (!ok) return NotFound();

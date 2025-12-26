@@ -4,10 +4,10 @@ namespace hotelApp.Services
 {
     public interface IRoomService
     {
-        Task<IEnumerable<RoomDto>> GetAllAsync(int? hotelId = null);
-        Task<RoomDto?> GetByIdAsync(int id);
-        Task<RoomDto> CreateAsync(RoomDto dto);
-        Task<bool> UpdateAsync(int id, RoomDto dto);
+        Task<IEnumerable<RoomTypeDto>> GetAllAsync(int? hotelId = null);
+        Task<RoomTypeDto?> GetByIdAsync(int id);
+        Task<RoomTypeDto> CreateAsync(RoomTypeDto dto);
+        Task<bool> UpdateAsync(int id, RoomTypeDto dto);
         Task<bool> DeleteAsync(int id);
     }
 

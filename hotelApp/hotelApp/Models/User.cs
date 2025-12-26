@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Models;
 
-[Index("Email", Name = "UQ__Users__A9D105341CE82528", IsUnique = true)]
+[Index("Email", Name = "UQ__Users__A9D10534348EC600", IsUnique = true)]
 public partial class User
 {
     [Key]

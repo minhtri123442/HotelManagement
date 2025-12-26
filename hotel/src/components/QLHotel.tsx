@@ -174,14 +174,23 @@ export default function HotelsList() {
 
             <tbody className="divide-y divide-gray-100">
               {filteredHotels.map((h, index) => {
-                // 1. Mở ngoặc nhọn { ở đây để viết code logic Javascript
-
-                // Logic chọn ảnh ưu tiên: imageUrls (Mới) -> images (Cũ) -> null
                 let displayImage = null;
                 if (h.imageUrls && h.imageUrls.length > 0) {
                   displayImage = h.imageUrls[0];
                 } else if (h.images && h.images.length > 0) {
                   displayImage = h.images[0];
+                }
+
+                // [SỬA] Logic tạo đường dẫn ảnh đầy đủ
+                let fullImageUrl = "";
+                if (displayImage) {
+                  // Nếu tên ảnh đã có dấu '/' ở đầu (VD: /images/hcm.jpg) thì chỉ cộng API_BASE
+                  if (displayImage.startsWith("/")) {
+                    fullImageUrl = `${API_BASE}${displayImage}`;
+                  } else {
+                    // Nếu chỉ là tên file (VD: photo.jpg) thì cộng thêm /images/
+                    fullImageUrl = `${API_BASE}/images/${displayImage}`;
+                  }
                 }
 
                 // 2. Phải dùng từ khóa 'return' để trả về JSX
@@ -199,7 +208,7 @@ export default function HotelsList() {
                       <div className="w-24 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
                         {displayImage ? (
                           <img
-                            src={`${API_BASE}${displayImage}`}
+                            src={fullImageUrl}
                             alt={h.name}
                             className="w-full h-full object-cover"
                             onError={(e) => (e.target.style.display = "none")}

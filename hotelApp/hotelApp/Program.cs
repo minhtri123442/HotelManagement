@@ -3,6 +3,9 @@ using hotelApp.Models;
 using AutoMapper;
 using hotelApp.Reposities;
 using hotelApp.Repositories;
+using hotelApp.DTOs;
+using hotelApp.Controllers;
+using hotelApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<HotelContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IHotelRepository, HotelRepository>();
+builder.Services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 
 
 // ==================== AUTO MAPPER ====================
