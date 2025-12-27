@@ -110,12 +110,14 @@ export default function RoomTypeList() {
   };
 
   const fetchRooms = async () => {
-    // Nếu chưa chọn khách sạn (hotelId = 0) -> Xóa list phòng, tắt loading
-    if (!hotelId || hotelId === 0) {
+    // SỬA LẠI: Chỉ return nếu hotelId là -1 (chưa chọn) hoặc NaN
+    // Cho phép số 0 đi qua
+    if (hotelId === -1 || isNaN(hotelId)) {
       setRooms([]);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       const response = await axios.get(`${API_ROOMS}/hotel/${hotelId}`);
@@ -134,16 +136,15 @@ export default function RoomTypeList() {
   // --- LOGIC HANDLE ---
   const handleHotelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const rawValue = event.target.value;
-    console.log("Giá trị chọn:", rawValue); // Bật F12 xem log này in ra gì
+    console.log("Giá trị raw từ select:", rawValue); // Kiểm tra xem nó in ra số hay chữ
 
     const val = parseInt(rawValue, 10);
 
-    // Kiểm tra kỹ hơn: phải là số và lớn hơn 0
-    if (!isNaN(val) && val !== -1) {
+    // Kiểm tra kỹ val có phải số hợp lệ không (chấp nhận cả ID = 0 nếu database start từ 0)
+    if (!isNaN(val)) {
       navigate(`/roomTypes/hotel/${val}`);
     } else {
-      // Nếu ID lỗi hoặc = 0, về trang gốc
-      console.warn("ID không hợp lệ hoặc bằng 0, quay về mặc định");
+      console.warn("Giá trị không phải số, reset về trang gốc");
       navigate(`/roomTypes`);
     }
   };
@@ -243,17 +244,34 @@ export default function RoomTypeList() {
             </label>
             <select
               className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[250px] bg-white"
-              value={hotelId || 0}
+              // SỬA LỖI 2: Cho phép số 0 hiển thị (chỉ chặn null/undefined/NaN)
+              value={
+                hotelId !== null && hotelId !== undefined && !isNaN(hotelId)
+                  ? hotelId
+                  : -1
+              }
               onChange={handleHotelChange}
             >
               <option value={-1}>-- Chọn khách sạn --</option>
-              {hotels.map((h: any) => {
-                // Lấy ID dù backend trả về hotelID hay HotelID
-                const realID = h.hotelID || h.HotelID;
+
+              {hotels.map((h: any, index) => {
+                // SỬA LỖI 1: Dùng toán tử ?? (Nullish) để số 0 vẫn được tính là ĐÚNG
+                const realID =
+                  h.hotelID ?? h.HotelID ?? h.id ?? h.Id ?? h.hotelId;
+                const realName = h.name ?? h.Name;
+
+                // Check kỹ lại lần nữa
+                if (realID === undefined || realID === null) {
+                  console.error(
+                    `Bỏ qua khách sạn [${index}] vì không tìm thấy ID:`,
+                    h
+                  );
+                  return null;
+                }
 
                 return (
                   <option key={realID} value={realID}>
-                    {h.name || h.Name} {realID === 0 ? "(Lỗi ID=0)" : ""}
+                    {realName} {realID === 0 ? "(ID: 0)" : ""}
                   </option>
                 );
               })}

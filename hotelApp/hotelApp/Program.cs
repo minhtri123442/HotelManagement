@@ -15,6 +15,9 @@ builder.Services.AddDbContext<HotelContext>(options =>
 builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomAvailabilityRepository, RoomAvailabilityRepository>();
+
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 
 
 // ==================== AUTO MAPPER ====================
