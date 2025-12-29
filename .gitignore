@@ -43,3 +43,11 @@ node_modules/
 dist/
 npm-debug.log
 yarn-error.log
+
+# Chặn các file nhạy cảm khác của VS Code hoặc hệ điều hành
+.vscode/
+.DS_Store
+# === Security & API Keys ===
+# Chặn file cấu hình chứa key thật của Backend (.NET)
+appsettings.json
+appsettings.Development.json
