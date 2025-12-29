@@ -1,7 +1,7 @@
 ﻿using hotelApp.DTOs;
 using hotelApp.Models;
 using hotelApp.Services;
-using hotelApp.Repositories; // Cần thêm namespace này
+using hotelApp.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace hotelApp.Controllers
@@ -11,14 +11,22 @@ namespace hotelApp.Controllers
     public class RoomTypesController : ControllerBase
     {
         private readonly IRoomTypeService _service;
-
-        // 1. Cần thêm Repository này để thao tác với bảng Lịch & Giá
         private readonly IRoomAvailabilityRepository _availRepo;
 
-        public RoomTypesController(IRoomTypeService service, IRoomAvailabilityRepository availRepo)
+        // 1. Thêm 2 dependency này để xử lý ảnh
+        private readonly IPhotoService _photoService;
+        private readonly HotelContext _db;
+
+        public RoomTypesController(
+            IRoomTypeService service,
+            IRoomAvailabilityRepository availRepo,
+            IPhotoService photoService,
+            HotelContext db)
         {
             _service = service;
             _availRepo = availRepo;
+            _photoService = photoService;
+            _db = db;
         }
 
         [HttpGet("hotel/{hotelId}")]
@@ -36,7 +44,9 @@ namespace hotelApp.Controllers
             return Ok(result);
         }
 
-        // POST: api/roomtypes
+        // =========================================================
+        // POST: api/roomtypes (Đã tích hợp Cloudinary)
+        // =========================================================
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] RoomTypeCreateDto input)
         {
@@ -44,32 +54,77 @@ namespace hotelApp.Controllers
 
             try
             {
-                // Bước 1: Tạo Loại phòng (RoomType)
+                // Bước 1: Tạo Loại phòng (Chỉ lưu thông tin Text thông qua Service)
+                // Lưu ý: Đảm bảo RoomTypeService đã xóa code lưu ảnh local đi rồi nhé!
                 var createdRoom = await _service.CreateRoomType(input);
 
+                // --- HÀM LOCAL: UPLOAD ẢNH & LƯU LINK VÀO DB ---
+                async Task UploadAndSaveImage(IFormFile file, bool isThumbnail)
+                {
+                    // a. Upload lên Cloudinary
+                    var result = await _photoService.AddPhotoAsync(file);
+                    if (result.Error != null) throw new Exception("Lỗi Cloudinary: " + result.Error.Message);
+
+                    // b. Lưu link vào Database
+                    if (isThumbnail)
+                    {
+                        // Cập nhật ThumbnailUrl cho phòng vừa tạo
+                        var roomEntity = await _db.RoomTypes.FindAsync(createdRoom.RoomTypeID);
+                        if (roomEntity != null)
+                        {
+                            roomEntity.ThumbnailUrl = result.SecureUrl.AbsoluteUri;
+                            _db.RoomTypes.Update(roomEntity);
+                        }
+                    }
+                    else
+                    {
+                        // Thêm ảnh vào bảng RoomTypeImages
+                        var imgEntity = new RoomTypeImage
+                        {
+                            RoomTypeId = createdRoom.RoomTypeID,
+                            ImageUrl = result.SecureUrl.AbsoluteUri,
+                            Caption = "Chi tiết"
+                        };
+                        _db.RoomTypeImages.Add(imgEntity);
+                    }
+                }
+
+                // Upload Thumbnail (nếu có)
+                if (input.ThumbnailImage != null)
+                {
+                    await UploadAndSaveImage(input.ThumbnailImage, true);
+                }
+
+                // Upload Gallery (nếu có)
+                if (input.GalleryImages != null && input.GalleryImages.Count > 0)
+                {
+                    foreach (var file in input.GalleryImages)
+                    {
+                        await UploadAndSaveImage(file, false);
+                    }
+                }
+
+                // Lưu các thay đổi về ảnh vào DB
+                await _db.SaveChangesAsync();
+
+
                 // =========================================================================
-                // Bước 2: TỰ ĐỘNG SINH DỮ LIỆU LỊCH CHO 30 NGÀY TỚI 
+                // Bước 2: TỰ ĐỘNG SINH DỮ LIỆU LỊCH (Giữ nguyên logic cũ)
                 // =========================================================================
                 var today = DateOnly.FromDateTime(DateTime.Now);
-
                 for (int i = 0; i < 30; i++)
                 {
                     var date = today.AddDays(i);
-
                     var availability = new RoomAvailability
                     {
-                        RoomTypeId = createdRoom.RoomTypeID, // Lấy ID vừa tạo
+                        RoomTypeId = createdRoom.RoomTypeID,
                         Date = date,
-                        // Lấy số lượng và giá gốc từ input người dùng nhập
                         AvailableQty = input.Quantity,
                         Price = input.BasePrice,
                         IsClosed = false
                     };
-
                     await _availRepo.AddAsync(availability);
                 }
-
-                // Lưu danh sách lịch vào DB
                 await _availRepo.SaveChangesAsync();
                 // =========================================================================
 
@@ -81,7 +136,9 @@ namespace hotelApp.Controllers
             }
         }
 
-        // PUT: api/roomtypes/5
+        // =========================================================
+        // PUT: api/roomtypes/5 (Đã tích hợp Cloudinary)
+        // =========================================================
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] RoomTypeUpdateDto input)
         {
@@ -90,40 +147,72 @@ namespace hotelApp.Controllers
 
             try
             {
-                // Bước 1: Cập nhật thông tin gốc
+                // Bước 1: Cập nhật thông tin Text qua Service
                 await _service.UpdateRoomType(id, input);
 
-                // =========================================================================
-                // Bước 2: ĐỒNG BỘ SỐ LƯỢNG SANG BẢNG LỊCH (Logic bổ sung)
-                // =========================================================================
-                // Nếu người dùng thay đổi "Tổng số lượng" (VD: xây thêm phòng, từ 5 lên 10)
-                // Ta cần cập nhật lại AvailableQty cho các ngày TƯƠNG LAI chưa có booking.
+                // --- HÀM LOCAL: UPLOAD ẢNH MỚI (Nếu có) ---
+                async Task UploadAndSaveImage(IFormFile file, bool isThumbnail)
+                {
+                    var result = await _photoService.AddPhotoAsync(file);
+                    if (result.Error != null) throw new Exception("Lỗi Cloudinary: " + result.Error.Message);
 
-                // Lưu ý: Đây là logic cập nhật đơn giản (ghi đè số lượng cũ bằng số lượng mới).
-                // Trong thực tế nếu có booking rồi thì logic sẽ phức tạp hơn (NewQty - BookedQty).
-                // Ở đây mình làm demo cập nhật cho 30 ngày tới để đồng bộ dữ liệu hiển thị.
+                    if (isThumbnail)
+                    {
+                        var roomEntity = await _db.RoomTypes.FindAsync(id);
+                        if (roomEntity != null)
+                        {
+                            roomEntity.ThumbnailUrl = result.SecureUrl.AbsoluteUri;
+                            _db.RoomTypes.Update(roomEntity);
+                        }
+                    }
+                    else
+                    {
+                        var imgEntity = new RoomTypeImage
+                        {
+                            RoomTypeId = id,
+                            ImageUrl = result.SecureUrl.AbsoluteUri,
+                            Caption = "Chi tiết (Mới)"
+                        };
+                        _db.RoomTypeImages.Add(imgEntity);
+                    }
+                }
 
+                // Kiểm tra và upload ảnh Thumbnail mới
+                if (input.ThumbnailImage != null)
+                {
+                    await UploadAndSaveImage(input.ThumbnailImage, true);
+                }
+
+                // Kiểm tra và upload ảnh Gallery mới
+                if (input.GalleryImages != null && input.GalleryImages.Count > 0)
+                {
+                    foreach (var file in input.GalleryImages)
+                    {
+                        await UploadAndSaveImage(file, false);
+                    }
+                }
+
+                // Lưu ảnh vào DB
+                await _db.SaveChangesAsync();
+
+
+                // =========================================================================
+                // Bước 2: ĐỒNG BỘ SỐ LƯỢNG SANG BẢNG LỊCH (Giữ nguyên logic cũ)
+                // =========================================================================
                 var today = DateOnly.FromDateTime(DateTime.Now);
                 var futureDate = today.AddDays(30);
-
-                // Lấy lịch trong 30 ngày tới
                 var availabilities = await _availRepo.GetByDateRangeAsync(id, today, futureDate);
 
                 foreach (var item in availabilities)
                 {
-                    // Cập nhật lại số lượng trống bằng số lượng tổng mới
-                    // (Lưu ý: Chỉ nên làm thế này nếu chưa có booking nào trong những ngày này)
                     item.AvailableQty = input.Quantity;
-
-                    // Nếu muốn cập nhật luôn giá gốc (nếu Admin muốn):
-                    // item.Price = input.BasePrice; 
-
+                    // item.Price = input.BasePrice; // Nếu muốn cập nhật giá luôn
                     await _availRepo.UpdateAsync(item);
                 }
                 await _availRepo.SaveChangesAsync();
                 // =========================================================================
 
-                return Ok(new { message = "Cập nhật thành công và đã đồng bộ lịch!" });
+                return Ok(new { message = "Cập nhật thành công!" });
             }
             catch (Exception ex)
             {
@@ -135,9 +224,10 @@ namespace hotelApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            // Nếu muốn xóa ảnh trên Cloudinary khi xóa phòng, bạn có thể gọi _photoService.DeletePhotoAsync ở đây
+            // Nhưng cần lấy được PublicID của ảnh từ URL trước.
+            // Tạm thời mình chỉ xóa DB.
             await _service.DeleteRoomType(id);
-            // Lưu ý: Khi xóa RoomType, CSDL có setup ON DELETE CASCADE
-            // nên các dòng bên RoomAvailability sẽ tự động bay màu theo, không cần xóa tay.
             return NoContent();
         }
     }

@@ -12,6 +12,7 @@ import RoomTypeList from "./pages/Frm_QLRoomType";
 import RoomTypeAdd from "./components/AddRoomType";
 import RoomTypeEdit from "./components/RoomTypeEdit";
 import Availability from "./pages/AvailabilityCalendar";
+import HotelEdit from "./components/HotelEdit";
 
 // --- IMPORT TRANG USER ---
 import HomePage from "./pages/HomePage";
@@ -65,6 +66,9 @@ export default function App() {
           {/* --- QUẢN LÝ LỊCH --- */}
           {/* /admin/availability */}
           <Route path="availability" element={<Availability />} />
+          {/* --- CHỈNH SỬA KHÁCH SẠN --- */}
+          {/* /admin/hotels/edit/:id */}
+          <Route path="hotels/edit/:id" element={<HotelEdit />} />
         </Route>
 
         {/* Route 404 (Nếu nhập linh tinh) */}

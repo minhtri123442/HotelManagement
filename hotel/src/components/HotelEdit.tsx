@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 // --- IMPORT HEROICONS ---
 import {
@@ -7,22 +7,29 @@ import {
   CloudArrowUpIcon,
   PhotoIcon,
   XMarkIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 // CẤU HÌNH API
 const API_BASE = "http://localhost:5134";
 
-export default function HotelAdd() {
+export default function HotelEdit() {
+  const { id } = useParams();
   const navigate = useNavigate();
+
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Loading lúc đầu tải trang
+  const [submitting, setSubmitting] = useState(false); // Loading lúc ấn nút Lưu
 
-  // --- STATE ẢNH ---
-  const [selectedImage, setSelectedImage] = useState(null); // Ảnh chính (File)
-  const [previewUrl, setPreviewUrl] = useState(null); // Ảnh chính (Preview URL)
+  // --- STATE ẢNH MỚI (Sẽ upload) ---
+  const [selectedMainImage, setSelectedMainImage] = useState(null); // File ảnh chính mới
+  const [mainPreview, setMainPreview] = useState(null); // Preview ảnh chính mới
 
-  const [galleryFiles, setGalleryFiles] = useState([]); // Ảnh phụ (List File)
-  const [galleryPreviews, setGalleryPreviews] = useState([]); // Ảnh phụ (List URL)
+  const [newGalleryFiles, setNewGalleryFiles] = useState([]); // List File ảnh phụ mới
+  const [newGalleryPreviews, setNewGalleryPreviews] = useState([]); // List Preview ảnh phụ mới
+
+  // --- STATE ẢNH CŨ (Đã có trên Server) ---
+  const [existingImages, setExistingImages] = useState([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -39,16 +46,63 @@ export default function HotelAdd() {
     mapLongitude: "",
   });
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/locations`)
-      .then((res) => res.json())
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data.items || [];
-        setLocations(list);
-      })
-      .catch((err) => console.error("Không tải được location:", err));
-  }, []);
+  // Helper: Tạo đường dẫn ảnh đầy đủ qua cloudinary
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://via.placeholder.com/150";
+    // Nếu là link Cloudinary (https://...) -> Trả về luôn
+    if (imagePath.startsWith("http")) return imagePath;
 
+    // Fallback cho data cũ
+    return `${API_BASE}/Hotel_Image/${imagePath.replace(/^\/+/, "")}`;
+  };
+
+  // 1. Load Dữ liệu ban đầu
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Load Locations
+        const resLoc = await fetch(`${API_BASE}/api/locations`);
+        const dataLoc = await resLoc.json();
+        setLocations(Array.isArray(dataLoc) ? dataLoc : dataLoc.items || []);
+
+        // Load Hotel Detail
+        const resHotel = await fetch(`${API_BASE}/api/hotels/${id}`);
+        if (!resHotel.ok) throw new Error("Không tìm thấy khách sạn");
+        const data = await resHotel.json();
+
+        setFormData({
+          name: data.name,
+          slug: data.slug,
+          address: data.address,
+          locationID: data.locationID,
+          description: data.description || "",
+          starRating: data.starRating,
+          checkInTime: data.checkInTime || "14:00",
+          checkOutTime: data.checkOutTime || "12:00",
+          status: data.status,
+          mapUrl: data.mapUrl || "",
+          mapLatitude: data.mapLatitude || "",
+          mapLongitude: data.mapLongitude || "",
+        });
+
+        // Set ảnh cũ
+        if (data.imageUrls) {
+          setExistingImages(data.imageUrls);
+        } else if (data.images) {
+          setExistingImages(data.images);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Lỗi tải dữ liệu!");
+        navigate("/admin/hotelsList");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id, navigate]);
+
+  // Logic tạo Slug
   const generateSlug = (text) => {
     return text
       .toString()
@@ -74,53 +128,44 @@ export default function HotelAdd() {
     let value = e.target.value;
     if (value.includes("<iframe") && value.includes('src="')) {
       const match = value.match(/src="([^"]*)"/);
-      if (match && match[1]) {
-        value = match[1];
-      }
+      if (match && match[1]) value = match[1];
     }
     setFormData((prev) => ({ ...prev, mapUrl: value }));
   };
 
-  // --- XỬ LÝ ẢNH CHÍNH ---
-  const handleImageChange = (e) => {
+  // --- XỬ LÝ ẢNH CHÍNH (Thay thế ảnh cũ) ---
+  const handleMainImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setSelectedMainImage(file);
+      setMainPreview(URL.createObjectURL(file));
     }
   };
 
-  // --- XỬ LÝ ẢNH PHỤ (GALLERY) ---
+  // --- XỬ LÝ ẢNH PHỤ (Thêm tiếp vào) ---
   const handleGalleryChange = (e) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-
-      // 1. Lưu file vào state để gửi đi
-      setGalleryFiles((prev) => [...prev, ...files]);
-
-      // 2. Tạo preview URL
+      setNewGalleryFiles((prev) => [...prev, ...files]);
       const newPreviews = files.map((file) => URL.createObjectURL(file));
-      setGalleryPreviews((prev) => [...prev, ...newPreviews]);
+      setNewGalleryPreviews((prev) => [...prev, ...newPreviews]);
     }
   };
 
-  // Xóa ảnh khỏi danh sách chờ upload
-  const removeGalleryImage = (index) => {
-    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
-    setGalleryPreviews((prev) => prev.filter((_, i) => i !== index));
+  const removeNewGalleryImage = (index) => {
+    setNewGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewGalleryPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // --- SUBMIT ---
+  // --- SUBMIT UPDATE ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.locationID) {
-      alert("Vui lòng chọn địa điểm!");
-      return;
-    }
+    setSubmitting(true);
 
-    setLoading(true);
     try {
       const data = new FormData();
+      // Các trường Text
+      data.append("hotelID", id); // Quan trọng khi PUT
       data.append("name", formData.name);
       data.append("slug", formData.slug);
       data.append("address", formData.address);
@@ -137,42 +182,48 @@ export default function HotelAdd() {
       if (formData.mapLongitude)
         data.append("mapLongitude", formData.mapLongitude);
 
-      // 1. Append ảnh chính
-      if (selectedImage) {
-        data.append("ImageFile", selectedImage);
+      // 1. Ảnh chính mới (Nếu có chọn)
+      if (selectedMainImage) {
+        data.append("ImageFile", selectedMainImage);
       }
 
-      // 2. Append danh sách ảnh phụ (Lặp qua mảng)
-      galleryFiles.forEach((file) => {
-        data.append("GalleryFiles", file); // Tên phải khớp với DTO backend
+      // 2. Ảnh phụ mới (Nếu có chọn)
+      newGalleryFiles.forEach((file) => {
+        data.append("GalleryFiles", file); // Phải khớp với DTO Backend
       });
 
-      const res = await fetch(`${API_BASE}/api/hotels`, {
-        method: "POST",
+      // Gửi PUT Request
+      const res = await fetch(`${API_BASE}/api/hotels/${id}`, {
+        method: "PUT",
         body: data,
       });
 
       if (res.ok) {
-        alert("Thêm khách sạn thành công!");
+        alert("Cập nhật thành công!");
         navigate("/admin/hotelsList");
       } else {
         const errorText = await res.text();
-        alert("Lỗi khi thêm: " + errorText);
+        alert("Lỗi khi cập nhật: " + errorText);
       }
     } catch (error) {
       console.error(error);
       alert("Lỗi kết nối server!");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (loading)
+    return (
+      <div className="p-10 text-center text-gray-500">Đang tải dữ liệu...</div>
+    );
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen font-sans flex justify-center">
       <div className="w-full max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-slate-800">
-            Thêm Mới Khách Sạn
+            Cập Nhật Khách Sạn
           </h1>
           <Link
             to="/admin/hotelsList"
@@ -207,7 +258,7 @@ export default function HotelAdd() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Slug (URL) <span className="text-red-500">*</span>
+                  Slug (URL)
                 </label>
                 <input
                   type="text"
@@ -359,22 +410,32 @@ export default function HotelAdd() {
             />
           </div>
 
-          {/* --- KHU VỰC UPLOAD ẢNH CHÍNH --- */}
+          {/* --- KHU VỰC QUẢN LÝ ẢNH --- */}
           <div className="mt-6 border-t pt-4">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Hình ảnh</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Quản lý Hình ảnh
+            </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 1. ẢNH ĐẠI DIỆN */}
               <div>
                 <label className="block text-sm font-bold text-blue-800 mb-2">
-                  1. Ảnh đại diện (Main Thumbnail)
+                  1. Ảnh đại diện (Thay thế)
                 </label>
                 <div className="flex items-center gap-4 border p-4 rounded-lg bg-blue-50 border-blue-100">
                   <div className="w-24 h-24 border border-gray-300 rounded-lg bg-white flex items-center justify-center overflow-hidden">
-                    {previewUrl ? (
+                    {/* Ưu tiên hiện ảnh mới chọn -> Nếu ko thì hiện ảnh cũ -> Nếu ko thì hiện icon */}
+                    {mainPreview ? (
                       <img
-                        src={previewUrl}
-                        alt="Preview"
+                        src={mainPreview}
+                        alt="New Main"
                         className="w-full h-full object-cover"
+                      />
+                    ) : existingImages.length > 0 ? (
+                      <img
+                        src={getImageUrl(existingImages[0])}
+                        alt="Current Main"
+                        className="w-full h-full object-cover opacity-80"
                       />
                     ) : (
                       <PhotoIcon className="w-8 h-8 text-gray-400" />
@@ -384,51 +445,76 @@ export default function HotelAdd() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleImageChange}
+                      onChange={handleMainImageChange}
                       className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                     />
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      Chọn ảnh mới để thay thế ảnh hiện tại.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* --- KHU VỰC UPLOAD ẢNH PHỤ (GALLERY) --- */}
+              {/* 2. ẢNH PHỤ (GALLERY) */}
               <div>
                 <label className="block text-sm font-bold text-teal-800 mb-2">
-                  2. Bộ sưu tập ảnh (Chọn nhiều)
+                  2. Thêm ảnh phụ mới
                 </label>
                 <div className="border p-4 rounded-lg bg-teal-50 border-teal-100">
                   <input
                     type="file"
-                    multiple // QUAN TRỌNG: Cho phép chọn nhiều
+                    multiple
                     accept="image/*"
                     onChange={handleGalleryChange}
                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer mb-3"
                   />
 
-                  {/* Hiển thị danh sách ảnh đã chọn */}
-                  {galleryPreviews.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                      {galleryPreviews.map((src, idx) => (
-                        <div key={idx} className="relative group w-16 h-16">
-                          <img
-                            src={src}
-                            alt="Gallery"
-                            className="w-full h-full object-cover rounded border border-teal-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeGalleryImage(idx)}
-                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow"
-                          >
-                            <XMarkIcon className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
+                  {/* List ảnh MỚI chọn */}
+                  {newGalleryPreviews.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-bold text-teal-700 mb-1">
+                        Ảnh chuẩn bị upload ({newGalleryPreviews.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                        {newGalleryPreviews.map((src, idx) => (
+                          <div key={idx} className="relative group w-16 h-16">
+                            <img
+                              src={src}
+                              alt="New Gallery"
+                              className="w-full h-full object-cover rounded border border-teal-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeNewGalleryImage(idx)}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow"
+                            >
+                              <XMarkIcon className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 italic">
-                      Chưa có ảnh phụ nào được chọn.
-                    </p>
+                  )}
+
+                  {/* List ảnh CŨ đang có trên server */}
+                  {existingImages.length > 0 && (
+                    <div className="mt-4 border-t border-teal-200 pt-2">
+                      <p className="text-xs font-bold text-gray-600 mb-1">
+                        Ảnh hiện có trên hệ thống:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {existingImages.map((imgUrl, idx) => (
+                          <div key={idx} className="w-12 h-12 relative group">
+                            <img
+                              src={getImageUrl(imgUrl)}
+                              alt="Old"
+                              className="w-full h-full object-cover rounded border border-gray-300 grayscale group-hover:grayscale-0 transition"
+                            />
+                            {/* Lưu ý: Backend hiện tại chưa hỗ trợ API xóa từng ảnh lẻ, nên ở đây chỉ hiển thị để xem */}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -445,15 +531,15 @@ export default function HotelAdd() {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
-              {loading ? (
-                "Đang tải lên..."
+              {submitting ? (
+                "Đang lưu..."
               ) : (
                 <>
                   <CloudArrowUpIcon className="w-5 h-5" />
-                  Lưu lại
+                  Cập nhật
                 </>
               )}
             </button>

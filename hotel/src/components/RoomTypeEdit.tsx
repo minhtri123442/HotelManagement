@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-
-interface RoomImageDto {
-  roomImageID: number;
-  imageUrl: string;
-}
+import {
+  ArrowLeftIcon,
+  CloudArrowUpIcon,
+  XMarkIcon,
+  PhotoIcon,
+} from "@heroicons/react/24/outline";
+import { CheckCircleIcon } from "@heroicons/react/24/solid";
 
 export default function RoomTypeEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams(); // Bỏ <{ id: string }>
   const navigate = useNavigate();
   const BACKEND_DOMAIN = "http://localhost:5134";
   const API_ROOMS = `${BACKEND_DOMAIN}/api/RoomTypes`;
 
   const [loading, setLoading] = useState(true);
-
-  // --- STATE MỚI: ĐỂ HIỆN MODAL THÀNH CÔNG ---
+  const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // 1. Dữ liệu TEXT
@@ -33,17 +34,20 @@ export default function RoomTypeEdit() {
     existingThumbnail: "",
   });
 
-  const [newThumbnailFile, setNewThumbnailFile] = useState<File | null>(null);
-  const [newGalleryFiles, setNewGalleryFiles] = useState<File[]>([]);
-  const [existingGallery, setExistingGallery] = useState<RoomImageDto[]>([]);
+  // State File (Bỏ cú pháp <File | null>)
+  const [newThumbnailFile, setNewThumbnailFile] = useState(null);
+  const [newGalleryFiles, setNewGalleryFiles] = useState([]);
+
+  // State Ảnh cũ (Bỏ interface RoomImageDto)
+  const [existingGallery, setExistingGallery] = useState([]);
 
   // Preview ảnh
-  const [thumbPreview, setThumbPreview] = useState<string>("");
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [thumbPreview, setThumbPreview] = useState("");
+  const [galleryPreviews, setGalleryPreviews] = useState([]);
 
-  // Helper lấy ảnh
-  const getImageUrl = (path?: string) => {
-    if (!path) return "https://via.placeholder.com/150";
+  // Helper lấy ảnh Cloudinary
+  const getImageUrl = (path) => {
+    if (!path) return "";
     if (path.startsWith("http")) return path;
     return `${BACKEND_DOMAIN}/Hotel_Image/${path}`;
   };
@@ -85,15 +89,13 @@ export default function RoomTypeEdit() {
   }, [id, navigate, API_ROOMS]);
 
   // --- HANDLE INPUT ---
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // --- HANDLE FILES ---
-  const handleThumbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setNewThumbnailFile(file);
@@ -101,7 +103,7 @@ export default function RoomTypeEdit() {
     }
   };
 
-  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryChange = (e) => {
     if (e.target.files) {
       const filesArr = Array.from(e.target.files);
       setNewGalleryFiles((prev) => [...prev, ...filesArr]);
@@ -110,32 +112,33 @@ export default function RoomTypeEdit() {
     }
   };
 
-  const removeNewGalleryImage = (index: number) => {
+  const removeNewGalleryImage = (index) => {
     setNewGalleryFiles((prev) => prev.filter((_, i) => i !== index));
     setGalleryPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // --- HÀM ĐÓNG MODAL THÀNH CÔNG VÀ CHUYỂN TRANG ---
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
     navigate(`/roomTypes/hotel/${formData.hotelID}`);
   };
 
   // --- SUBMIT ---
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
     const data = new FormData();
-    data.append("RoomTypeID", formData.roomTypeID.toString());
-    data.append("HotelID", formData.hotelID.toString());
+    // Chú ý: Tên Key phải khớp với RoomTypeUpdateDto trong C#
+    data.append("RoomTypeID", formData.roomTypeID);
+    data.append("HotelID", formData.hotelID);
     data.append("Name", formData.name);
-    data.append("BasePrice", formData.basePrice.toString());
+    data.append("BasePrice", formData.basePrice);
     data.append("Description", formData.description);
-    data.append("MaxAdults", formData.maxAdults.toString());
-    data.append("MaxChildren", formData.maxChildren.toString());
-    data.append("RoomArea", formData.roomArea.toString());
+    data.append("MaxAdults", formData.maxAdults);
+    data.append("MaxChildren", formData.maxChildren);
+    data.append("RoomArea", formData.roomArea);
     data.append("BedType", formData.bedType);
-    data.append("Quantity", formData.quantity.toString());
+    data.append("Quantity", formData.quantity);
 
     if (newThumbnailFile) {
       data.append("ThumbnailImage", newThumbnailFile);
@@ -148,22 +151,12 @@ export default function RoomTypeEdit() {
       await axios.put(`${API_ROOMS}/${id}`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
-      // THAY ĐỔI: Không alert nữa, mà hiện Modal đẹp
       setShowSuccessModal(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Lỗi chi tiết:", error);
-      if (error.response) {
-        if (error.response.status === 405) {
-          alert("Lỗi 405: Backend chưa có hàm [HttpPut].");
-        } else if (error.response.status === 400) {
-          alert(`Lỗi dữ liệu: ${JSON.stringify(error.response.data)}`);
-        } else {
-          alert(`Lỗi Server (${error.response.status})`);
-        }
-      } else {
-        alert("Không thể kết nối tới Server!");
-      }
+      alert("Lỗi khi cập nhật dữ liệu!");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -172,179 +165,179 @@ export default function RoomTypeEdit() {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md border border-gray-200 relative">
-      <div className="border-b pb-4 mb-6">
+      <div className="border-b pb-4 mb-6 flex items-center gap-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-gray-500 hover:text-blue-600"
+        >
+          <ArrowLeftIcon className="w-6 h-6" />
+        </button>
         <h2 className="text-2xl font-bold text-gray-800">
           Chỉnh sửa Loại Phòng
         </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* --- FORM FIELDS (Giữ nguyên) --- */}
+        {/* --- TEXT INPUTS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="col-span-2 md:col-span-1">
-            <label className="block text-sm font-bold text-gray-700 mb-1">
+            <label className="block text-sm font-bold mb-1">
               Tên loại phòng *
             </label>
             <input
               type="text"
               name="name"
               required
-              className="w-full border p-2 rounded focus:ring-blue-500 outline-none"
-              value={formData.name || ""}
+              className="w-full border p-2 rounded"
+              value={formData.name}
               onChange={handleInputChange}
             />
           </div>
-
           <div className="col-span-2 md:col-span-1">
-            <label className="block text-sm font-bold text-gray-700 mb-1">
-              Giá cơ bản *
-            </label>
+            <label className="block text-sm font-bold mb-1">Giá cơ bản *</label>
             <input
               type="number"
               name="basePrice"
               required
-              className="w-full border p-2 rounded focus:ring-blue-500 outline-none"
-              value={formData.basePrice || 0}
+              className="w-full border p-2 rounded"
+              value={formData.basePrice}
               onChange={handleInputChange}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Người lớn
-              </label>
-              <input
-                type="number"
-                name="maxAdults"
-                className="w-full border p-2 rounded"
-                value={formData.maxAdults || 0}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trẻ em
-              </label>
-              <input
-                type="number"
-                name="maxChildren"
-                className="w-full border p-2 rounded"
-                value={formData.maxChildren || 0}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-
+          {/* Các input khác giữ nguyên logic... */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Diện tích (m²)
-            </label>
+            <label className="block text-sm font-medium">Người lớn</label>
+            <input
+              type="number"
+              name="maxAdults"
+              className="w-full border p-2 rounded"
+              value={formData.maxAdults}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Trẻ em</label>
+            <input
+              type="number"
+              name="maxChildren"
+              className="w-full border p-2 rounded"
+              value={formData.maxChildren}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Diện tích</label>
             <input
               type="number"
               name="roomArea"
               className="w-full border p-2 rounded"
-              value={formData.roomArea || 0}
+              value={formData.roomArea}
               onChange={handleInputChange}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Số lượng
-            </label>
+            <label className="block text-sm font-medium">Số lượng</label>
             <input
               type="number"
               name="quantity"
               className="w-full border p-2 rounded"
-              value={formData.quantity || 0}
+              value={formData.quantity}
               onChange={handleInputChange}
             />
           </div>
-
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Loại giường
-            </label>
+            <label className="block text-sm font-medium">Loại giường</label>
             <input
               type="text"
               name="bedType"
               className="w-full border p-2 rounded"
-              value={formData.bedType || ""}
+              value={formData.bedType}
               onChange={handleInputChange}
             />
           </div>
-
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mô tả
-            </label>
+            <label className="block text-sm font-medium">Mô tả</label>
             <textarea
               name="description"
               rows={3}
               className="w-full border p-2 rounded"
-              value={formData.description || ""}
+              value={formData.description}
               onChange={handleInputChange}
             />
           </div>
         </div>
 
-        {/* --- THUMBNAIL --- */}
+        {/* --- UPLOAD THUMBNAIL --- */}
         <div className="border border-blue-100 bg-blue-50 p-4 rounded-lg">
           <label className="block font-bold text-gray-800 mb-2">
-            Ảnh đại diện (Thumbnail)
+            Ảnh đại diện
           </label>
           <div className="flex items-center gap-6">
-            <div className="w-24 h-20 border rounded bg-white overflow-hidden">
-              <img
-                src={getImageUrl(formData.existingThumbnail)}
-                alt="Old"
-                className="w-full h-full object-cover"
-              />
+            <div className="w-24 h-20 border rounded bg-white overflow-hidden flex items-center justify-center">
+              {thumbPreview ? (
+                <img
+                  src={thumbPreview}
+                  alt="New"
+                  className="w-full h-full object-cover"
+                />
+              ) : formData.existingThumbnail ? (
+                <img
+                  src={getImageUrl(formData.existingThumbnail)}
+                  alt="Old"
+                  className="w-full h-full object-cover opacity-80"
+                />
+              ) : (
+                <PhotoIcon className="w-8 h-8 text-gray-300" />
+              )}
             </div>
             <div className="flex-1">
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleThumbChange}
-                className="text-sm"
+                className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-100 file:text-blue-700 cursor-pointer"
               />
-              {thumbPreview && (
-                <img
-                  src={thumbPreview}
-                  alt="New"
-                  className="h-20 mt-2 rounded border"
-                />
-              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Chọn ảnh mới để thay thế ảnh cũ.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* --- GALLERY --- */}
+        {/* --- UPLOAD GALLERY --- */}
         <div className="border border-teal-100 bg-teal-50 p-4 rounded-lg">
           <label className="block font-bold text-gray-800 mb-2">
-            Bộ sưu tập ảnh chi tiết
+            Bộ sưu tập ảnh
           </label>
-          <div className="flex gap-2 mb-4 overflow-x-auto">
-            {existingGallery.map((img) => (
-              <img
-                key={img.roomImageID}
-                src={getImageUrl(img.imageUrl)}
-                className="h-16 rounded border"
-                alt="Old Gallery"
-              />
-            ))}
-          </div>
+
+          {/* Ảnh cũ */}
+          {existingGallery.length > 0 && (
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+              {existingGallery.map((img) => (
+                <img
+                  key={img.roomImageID}
+                  src={getImageUrl(img.imageUrl)}
+                  className="h-16 rounded border grayscale opacity-80"
+                  alt="Old Gallery"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Input ảnh mới */}
           <input
             type="file"
             multiple
             accept="image/*"
             onChange={handleGalleryChange}
-            className="block w-full text-sm"
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-teal-100 file:text-teal-700 cursor-pointer"
           />
+
+          {/* Preview ảnh mới */}
           {galleryPreviews.length > 0 && (
             <div className="flex gap-2 mt-2 flex-wrap">
               {galleryPreviews.map((src, idx) => (
-                <div key={idx} className="relative">
+                <div key={idx} className="relative group">
                   <img
                     src={src}
                     className="h-16 rounded border border-green-500"
@@ -353,9 +346,9 @@ export default function RoomTypeEdit() {
                   <button
                     type="button"
                     onClick={() => removeNewGalleryImage(idx)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
                   >
-                    ×
+                    X
                   </button>
                 </div>
               ))}
@@ -370,56 +363,41 @@ export default function RoomTypeEdit() {
             onClick={() => navigate(-1)}
             className="px-6 py-2 border rounded hover:bg-gray-100"
           >
-            Hủy bỏ
+            Hủy
           </button>
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold"
+            disabled={submitting}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold flex items-center gap-2"
           >
-            Cập nhật
+            {submitting ? (
+              "Đang lưu..."
+            ) : (
+              <>
+                <CloudArrowUpIcon className="w-5 h-5" /> Cập nhật
+              </>
+            )}
           </button>
         </div>
       </form>
 
-      {/* --- MODAL THÔNG BÁO THÀNH CÔNG (ĐẸP NHƯ MODAL XÓA) --- */}
+      {/* MODAL SUCCESS */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm animate-bounce-in text-center transform scale-100">
-            {/* Icon Thành Công Màu Xanh */}
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-              <svg
-                className="h-10 w-10 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-
-            <h3 className="text-2xl leading-6 font-bold text-gray-900 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl p-8 w-full max-w-sm text-center">
+            <CheckCircleIcon className="h-16 w-16 text-green-600 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
               Thành công!
             </h3>
-            <div className="mt-2 mb-6">
-              <p className="text-sm text-gray-500">
-                Thông tin loại phòng đã được cập nhật thành công vào hệ thống.
-              </p>
-            </div>
-
-            <div className="mt-5">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-md px-4 py-3 bg-green-600 text-base font-bold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:text-sm transition-colors"
-                onClick={handleCloseSuccessModal}
-              >
-                Quay lại danh sách
-              </button>
-            </div>
+            <p className="text-gray-500 mb-6">
+              Đã cập nhật thông tin loại phòng.
+            </p>
+            <button
+              onClick={handleCloseSuccessModal}
+              className="w-full bg-green-600 text-white py-2 rounded-lg font-bold"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

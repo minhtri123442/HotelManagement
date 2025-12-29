@@ -1,7 +1,7 @@
 ﻿using hotelApp.DTOs;
 using hotelApp.Models;
 
-namespace hotelApp.Reposities
+namespace hotelApp.Repositories
 {
     public interface IHotelRepository
     {

@@ -2,7 +2,7 @@
 using AutoMapper.QueryableExtensions; // Cần cái này để dùng ProjectTo
 using hotelApp.DTOs;
 using hotelApp.Models;
-using hotelApp.Reposities;
+using hotelApp.Repositories;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 

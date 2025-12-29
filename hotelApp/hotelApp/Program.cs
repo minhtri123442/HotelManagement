@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using hotelApp.Models;
 using AutoMapper;
-using hotelApp.Reposities;
 using hotelApp.Repositories;
 using hotelApp.DTOs;
 using hotelApp.Controllers;
+using hotelApp.Helpers;
 using hotelApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +18,11 @@ builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomAvailabilityRepository, RoomAvailabilityRepository>();
 
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+// 1. Đọc config từ appsettings
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
+// 2. Đăng ký Service
+builder.Services.AddScoped<IPhotoService, PhotoService>();
 
 
 // ==================== AUTO MAPPER ====================
@@ -38,6 +43,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+
 
 // ==================== BUILD APP ====================
 var app = builder.Build();
