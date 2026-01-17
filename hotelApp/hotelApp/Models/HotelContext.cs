@@ -15,29 +15,33 @@ public partial class HotelContext : DbContext
     {
     }
 
-    public virtual DbSet<Amenity> Amenities { get; set; }
+    public virtual DbSet<Amenity> Amenities { get; set; }//
 
-    public virtual DbSet<Booking> Bookings { get; set; }
+    public virtual DbSet<Booking> Bookings { get; set; }//
 
-    public virtual DbSet<BookingDetail> BookingDetails { get; set; }
+    public virtual DbSet<BookingDetail> BookingDetails { get; set; }//
 
-    public virtual DbSet<Hotel> Hotels { get; set; }
+    public virtual DbSet<Hotel> Hotels { get; set; }//
 
-    public virtual DbSet<HotelImage> HotelImages { get; set; }
+    public virtual DbSet<HotelImage> HotelImages { get; set; }//
 
-    public virtual DbSet<Location> Locations { get; set; }
+    public virtual DbSet<Location> Locations { get; set; }//
 
-    public virtual DbSet<Promotion> Promotions { get; set; }
+    public virtual DbSet<Promotion> Promotions { get; set; }//
 
-    public virtual DbSet<Review> Reviews { get; set; }
+    public virtual DbSet<Review> Reviews { get; set; }//
 
-    public virtual DbSet<RoomAvailability> RoomAvailabilities { get; set; }
+    public virtual DbSet<RoomAvailability> RoomAvailabilities { get; set; }//
 
-    public virtual DbSet<RoomType> RoomTypes { get; set; }
+    public virtual DbSet<RoomType> RoomTypes { get; set; }//
 
-    public virtual DbSet<RoomTypeImage> RoomTypeImages { get; set; }
+    public virtual DbSet<RoomTypeImage> RoomTypeImages { get; set; }//
 
-    public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<User> Users { get; set; }//
+
+    public DbSet<HotelAmenity> HotelAmenities { get; set; }
+
+    public virtual DbSet<RoomTypeAmenity> RoomTypeAmenities { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -94,24 +98,24 @@ public partial class HotelContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Hotels__Location__3E52440B");
 
-            entity.HasMany(d => d.Amenities).WithMany(p => p.Hotels)
-                .UsingEntity<Dictionary<string, object>>(
-                    "HotelAmenity",
-                    r => r.HasOne<Amenity>().WithMany()
-                        .HasForeignKey("AmenityId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__HotelAmen__Ameni__440B1D61"),
-                    l => l.HasOne<Hotel>().WithMany()
-                        .HasForeignKey("HotelId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__HotelAmen__Hotel__4316F928"),
-                    j =>
-                    {
-                        j.HasKey("HotelId", "AmenityId").HasName("PK__HotelAme__EE4094EDA83A6999");
-                        j.ToTable("HotelAmenities");
-                        j.IndexerProperty<int>("HotelId").HasColumnName("HotelID");
-                        j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
-                    });
+            //entity.HasMany(d => d.HotelAmenities).WithMany(p => p.Hotel)
+            //    .UsingEntity<Dictionary<string, object>>(
+            //        "HotelAmenity",
+            //        r => r.HasOne<Amenity>().WithMany()
+            //            .HasForeignKey("AmenityId")
+            //            .OnDelete(DeleteBehavior.ClientSetNull)
+            //            .HasConstraintName("FK__HotelAmen__Ameni__440B1D61"),
+            //        l => l.HasOne<Hotel>().WithMany()
+            //            .HasForeignKey("HotelId")
+            //            .OnDelete(DeleteBehavior.ClientSetNull)
+            //            .HasConstraintName("FK__HotelAmen__Hotel__4316F928"),
+            //        j =>
+            //        {
+            //            j.HasKey("HotelId", "AmenityId").HasName("PK__HotelAme__EE4094EDA83A6999");
+            //            j.ToTable("HotelAmenities");
+            //            j.IndexerProperty<int>("HotelId").HasColumnName("HotelID");
+            //            j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
+            //        });
         });
 
         modelBuilder.Entity<HotelImage>(entity =>
@@ -165,34 +169,50 @@ public partial class HotelContext : DbContext
                 .HasConstraintName("FK__RoomAvail__RoomT__59063A47");
         });
 
-        modelBuilder.Entity<RoomType>(entity =>
+        //modelBuilder.Entity<RoomType>(entity =>
+        //{
+        //    entity.HasKey(e => e.RoomTypeId).HasName("PK__RoomType__BCC89611B59DA4C6");
+
+        //    entity.Property(e => e.MaxAdults).HasDefaultValue(2);
+        //    entity.Property(e => e.MaxChildren).HasDefaultValue(1);
+        //    entity.Property(e => e.Quantity).HasDefaultValue(1);
+
+        //    entity.HasOne(d => d.Hotel).WithMany(p => p.RoomTypes).HasConstraintName("FK__RoomTypes__Hotel__4D94879B");
+
+        //    entity.HasMany(d => d.Amenities).WithMany(p => p.RoomTypes)
+        //        .UsingEntity<Dictionary<string, object>>(
+        //            "RoomTypeAmenity",
+        //            r => r.HasOne<Amenity>().WithMany()
+        //                .HasForeignKey("AmenityId")
+        //                .OnDelete(DeleteBehavior.ClientSetNull)
+        //                .HasConstraintName("FK__RoomTypeA__Ameni__5441852A"),
+        //            l => l.HasOne<RoomType>().WithMany()
+        //                .HasForeignKey("RoomTypeId")
+        //                .OnDelete(DeleteBehavior.ClientSetNull)
+        //                .HasConstraintName("FK__RoomTypeA__RoomT__534D60F1"),
+        //            j =>
+        //            {
+        //                j.HasKey("RoomTypeId", "AmenityId").HasName("PK__RoomType__148A39438166D498");
+        //                j.ToTable("RoomTypeAmenities");
+        //                j.IndexerProperty<int>("RoomTypeId").HasColumnName("RoomTypeID");
+        //                j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
+        //            });
+        //});
+
+        modelBuilder.Entity<RoomTypeAmenity>(entity =>
         {
-            entity.HasKey(e => e.RoomTypeId).HasName("PK__RoomType__BCC89611B59DA4C6");
+            entity.ToTable("RoomTypeAmenities");
+            entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.MaxAdults).HasDefaultValue(2);
-            entity.Property(e => e.MaxChildren).HasDefaultValue(1);
-            entity.Property(e => e.Quantity).HasDefaultValue(1);
+            entity.HasOne(d => d.RoomType)
+                .WithMany(p => p.RoomTypeAmenities)
+                .HasForeignKey(d => d.RoomTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(d => d.Hotel).WithMany(p => p.RoomTypes).HasConstraintName("FK__RoomTypes__Hotel__4D94879B");
-
-            entity.HasMany(d => d.Amenities).WithMany(p => p.RoomTypes)
-                .UsingEntity<Dictionary<string, object>>(
-                    "RoomTypeAmenity",
-                    r => r.HasOne<Amenity>().WithMany()
-                        .HasForeignKey("AmenityId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__RoomTypeA__Ameni__5441852A"),
-                    l => l.HasOne<RoomType>().WithMany()
-                        .HasForeignKey("RoomTypeId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__RoomTypeA__RoomT__534D60F1"),
-                    j =>
-                    {
-                        j.HasKey("RoomTypeId", "AmenityId").HasName("PK__RoomType__148A39438166D498");
-                        j.ToTable("RoomTypeAmenities");
-                        j.IndexerProperty<int>("RoomTypeId").HasColumnName("RoomTypeID");
-                        j.IndexerProperty<int>("AmenityId").HasColumnName("AmenityID");
-                    });
+            entity.HasOne(d => d.Amenity)
+                .WithMany(p => p.RoomTypeAmenities)
+                .HasForeignKey(d => d.AmenityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RoomTypeImage>(entity =>
@@ -208,6 +228,29 @@ public partial class HotelContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Role).HasDefaultValue("Customer");
+        });
+
+        modelBuilder.Entity<HotelAmenity>(entity =>
+        {
+            entity.ToTable("HotelAmenities");
+
+            // Nếu bạn dùng Id riêng (int Id) làm khóa chính:
+            entity.HasKey(e => e.Id);
+
+            // Nếu bạn muốn dùng khóa phức hợp (HotelId + AmenityId):
+            // entity.HasKey(e => new { e.HotelId, e.AmenityId });
+
+            // Cấu hình quan hệ với Hotel
+            entity.HasOne(d => d.Hotel)
+                .WithMany(p => p.HotelAmenities)
+                .HasForeignKey(d => d.HotelId)
+                .OnDelete(DeleteBehavior.Cascade); // Hoặc ClientSetNull tùy logic xóa
+
+            // Cấu hình quan hệ với Amenity
+            entity.HasOne(d => d.Amenity)
+                .WithMany(p => p.HotelAmenities) // LƯU Ý: Phải thêm ICollection<HotelAmenity> vào Amenity.cs
+                .HasForeignKey(d => d.AmenityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         OnModelCreatingPartial(modelBuilder);

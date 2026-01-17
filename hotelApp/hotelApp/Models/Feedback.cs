@@ -36,7 +36,4 @@ public partial class Feedback
     [InverseProperty("Feedbacks")]
     public virtual Booking? Booking { get; set; }
 
-    [ForeignKey("CustomerId")]
-    [InverseProperty("Feedbacks")]
-    public virtual Customer? Customer { get; set; }
 }

@@ -1,84 +1,82 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/mainlayout"; // Layout này chứa Sidebar Admin
+import { Routes, Route, Navigate } from "react-router-dom";
 
-// --- IMPORT CÁC TRANG ADMIN ---
-import CustomerManagement from "./pages/frmQLKH";
-import EmployeeManagement from "./pages/frmQLNV";
-import HotelManagement from "./pages/Frm_DSKS";
-import AddHotel from "./components/AddHotel";
-import AdHotelDetail from "./components/AdminHotelDetail";
-import RoomTypeManagemanet from "./pages/Frm_QLRoomType";
-import RoomTypeList from "./pages/Frm_QLRoomType";
-import RoomTypeAdd from "./components/AddRoomType";
-import RoomTypeEdit from "./components/RoomTypeEdit";
-import Availability from "./pages/AvailabilityCalendar";
-import HotelEdit from "./components/HotelEdit";
+// 1. Import Layouts
+import MainLayout from "./Layout/mainlayout"; // Layout cho khách
+import AdminLayout from "./Layout/dashboard"; // Layout cho Admin
 
-// --- IMPORT TRANG USER ---
-import HomePage from "./pages/HomePage";
+// 2. Import Pages - ADMIN
+import HotelManagement from "./pages/Admin/HotelManagement";
+import AddHotelPage from "./pages/Admin/AddHotelPage";
+import EditHotelPage from "./pages/Admin/EditHotelPage";
+import DetailHotelPage from "./pages/Admin/AdminHotelDetail";
+import RoomTypeManagement from "./pages/Admin/RoomTypeManagement";
+import AddRoomTypePage from "./pages/Admin/AddRoomTypePage";
+import EditRoomType from "./pages/Admin/RoomTypeEditPage";
+import AmenitiesManagement from "./pages/Admin/AmenitiesManagement";
+import AdminBooking from "./pages/Admin/adminBooking";
+import AvailabilityCalendar from "./pages/Admin/AvailabilityCalendar";
+import CustomerList from "./pages/Admin/Customer";
+import Chart from "./pages/Admin/Chart";
 
-export default function App() {
+// 3. Import Pages - CLIENT
+import HomePage from "./pages/Client/HomePage";
+import HotelDetailPage from "./pages/Client/HotelDetailPage";
+import BookingPage from "./pages/Client/BookingPage";
+import BookingHistoryPage from "./pages/Client/BookingHistoryPage";
+
+// 4. Import Pages - AUTH (Đăng nhập/Đăng ký) - MỚI THÊM
+// Lưu ý: Bro kiểm tra kỹ đường dẫn file, tôi đang để mặc định là nằm ngay trong folder pages
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* ========================================================= */}
-        {/* 1. KHU VỰC PUBLIC (KHÁCH HÀNG) */}
-        {/* ========================================================= */}
+    <Routes>
+      {/* ================= AUTH ROUTES (Không có Layout) ================= */}
+      {/* Đặt ở ngoài cùng để nó chiếm toàn màn hình */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-        {/* Khi vào trang chủ http://localhost:5173/ thì tự động chuyển sang /HomePage */}
-        <Route path="/" element={<Navigate to="/HomePage" replace />} />
+      {/* ================= CLIENT ROUTES ================= */}
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="hotels/:id" element={<HotelDetailPage />} />
+        <Route path="client/booking" element={<BookingPage />} />
+        <Route path="booking-history" element={<BookingHistoryPage />} />
+      </Route>
 
-        {/* Route trang chủ: http://localhost:5173/HomePage */}
-        <Route path="/HomePage" element={<HomePage />} />
+      {/* ================= ADMIN ROUTES ================= */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="hotels" replace />} />
 
-        {/* ========================================================= */}
-        {/* 2. KHU VỰC ADMIN (QUẢN TRỊ) */}
-        {/* Tất cả đường dẫn bắt đầu bằng: http://localhost:5173/admin/... */}
-        {/* ========================================================= */}
-        <Route path="/admin" element={<Layout />}>
-          {/* Trang mặc định khi vào /admin -> chuyển đến danh sách khách sạn hoặc trang nào bạn muốn */}
-          <Route index element={<Navigate to="/admin/hotelsList" replace />} />
+        {/* Quản lý khách sạn */}
+        <Route path="hotels" element={<HotelManagement />} />
+        <Route path="hotels/add" element={<AddHotelPage />} />
+        <Route path="hotels/edit/:id" element={<EditHotelPage />} />
+        <Route path="hotels/detail/:id" element={<DetailHotelPage />} />
 
-          {/* Quản lý Khách hàng: /admin/customers */}
-          <Route path="customers" element={<CustomerManagement />} />
+        {/* Quản lý loại phòng */}
+        <Route path="room-types" element={<RoomTypeManagement />} />
+        <Route path="room-types/add/:id" element={<AddRoomTypePage />} />
+        <Route path="room-types/edit/:id" element={<EditRoomType />} />
+        <Route path="room-types/hotel/:id" element={<RoomTypeManagement />} />
 
-          {/* Quản lý Nhân viên: /admin/employees */}
-          <Route path="employees" element={<EmployeeManagement />} />
+        {/* Quản lý tiện ích */}
+        <Route path="amenities" element={<AmenitiesManagement />} />
 
-          {/* --- QUẢN LÝ KHÁCH SẠN --- */}
-          {/* /admin/hotelsList */}
-          <Route path="hotelsList" element={<HotelManagement />} />
-          {/* /admin/hotels/add */}
-          <Route path="hotels/add" element={<AddHotel />} />
-          {/* /admin/hotels/detail/:id */}
-          <Route path="hotels/detail/:id" element={<AdHotelDetail />} />
+        {/* Quản lý đặt phòng */}
+        <Route path="bookings" element={<AdminBooking />} />
 
-          {/* --- QUẢN LÝ LOẠI PHÒNG --- */}
-          {/* /admin/roomTypes */}
-          <Route path="roomTypes" element={<RoomTypeList />} />
-          {/* /admin/RoomTypes/add/:id */}
-          <Route path="RoomTypes/add/:id" element={<RoomTypeAdd />} />
-          {/* /admin/roomTypes/edit/:id */}
-          <Route path="roomTypes/edit/:id" element={<RoomTypeEdit />} />
-          {/* /admin/roomTypes/hotel/:id */}
-          <Route path="roomTypes/hotel/:id" element={<RoomTypeManagemanet />} />
+        {/* Quản lý lịch và giá */}
+        <Route path="availabilityCalendar" element={<AvailabilityCalendar />} />
 
-          {/* --- QUẢN LÝ LỊCH --- */}
-          {/* /admin/availability */}
-          <Route path="availability" element={<Availability />} />
-          {/* --- CHỈNH SỬA KHÁCH SẠN --- */}
-          {/* /admin/hotels/edit/:id */}
-          <Route path="hotels/edit/:id" element={<HotelEdit />} />
-        </Route>
-
-        {/* Route 404 (Nếu nhập linh tinh) */}
-        <Route
-          path="*"
-          element={
-            <div className="p-10 text-center">404 - Trang không tồn tại</div>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+        {/* Quản lý khách hàng */}
+        <Route path="customers" element={<CustomerList />} />
+        {/* Thống kê - Biểu đồ */}
+        <Route path="dashboard" element={<Chart />} />
+      </Route>
+    </Routes>
   );
 }
+
+export default App;

@@ -16,6 +16,11 @@
         // Output chỉ trả về đường dẫn ảnh (String)
         public string? ThumbnailUrl { get; set; }
         public List<RoomTypeImageDto> RoomTypeImages { get; set; }
+        // Trả về list ID để FE dễ xử lý tick checkbox
+        public List<int> AmenityIds { get; set; } = new List<int>();
+
+        // Trả về list Object nếu muốn hiện tên/icon ngay
+        public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();
     }
 
     public class RoomTypeImageDto

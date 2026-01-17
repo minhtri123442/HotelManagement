@@ -1,31 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace hotelApp.Models;
-
-public partial class Amenity
+namespace hotelApp.Models
 {
-    [Key]
-    [Column("AmenityID")]
-    public int AmenityId { get; set; }
+    public partial class Amenity
+    {
+        public int AmenityId { get; set; }
 
-    [StringLength(100)]
-    public string Name { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
-    [StringLength(100)]
-    public string? IconClass { get; set; }
+        public string? IconClass { get; set; }
 
-    [StringLength(20)]
-    public string? Type { get; set; }
+        public string? Type { get; set; }
 
-    [ForeignKey("AmenityId")]
-    [InverseProperty("Amenities")]
-    public virtual ICollection<Hotel> Hotels { get; set; } = new List<Hotel>();
+        // --- XÓA ĐOẠN CŨ NÀY ĐI (NGUYÊN NHÂN GÂY LỖI) ---
+        /*
+        [InverseProperty("Amenities")] 
+        public virtual ICollection<Hotel> Hotels { get; set; } = new List<Hotel>();
+        */
 
-    [ForeignKey("AmenityId")]
-    [InverseProperty("Amenities")]
-    public virtual ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
+        // --- THÊM ĐOẠN MỚI NÀY VÀO ---
+        // Để nối với bảng trung gian
+        public virtual ICollection<HotelAmenity> HotelAmenities { get; set; } = new List<HotelAmenity>();
+
+        public virtual ICollection<RoomTypeAmenity> RoomTypeAmenities { get; set; } = new List<RoomTypeAmenity>();
+    }
 }

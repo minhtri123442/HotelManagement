@@ -30,6 +30,7 @@ namespace hotelApp.DTOs
 
         // Trả về URL khi GET
         public List<string>? ImageUrls { get; set; }
+        public List<int>? AmenityIds { get; set; }
     }
 
     public class LocationOptionDto

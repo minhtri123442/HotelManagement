@@ -51,7 +51,5 @@ public partial class RoomType
     [InverseProperty("RoomType")]
     public virtual ICollection<RoomTypeImage> RoomTypeImages { get; set; } = new List<RoomTypeImage>();
 
-    [ForeignKey("RoomTypeId")]
-    [InverseProperty("RoomTypes")]
-    public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
+    public virtual ICollection<RoomTypeAmenity> RoomTypeAmenities { get; set; } = new List<RoomTypeAmenity>();
 }

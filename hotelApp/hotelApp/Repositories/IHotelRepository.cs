@@ -18,10 +18,11 @@ namespace hotelApp.Repositories
         // --- WRITE ---
         Task<Hotel> AddHotelAsync(Hotel hotel);
         Task<Hotel> UpdateHotelAsync(Hotel hotel);
-        Task<bool> DeleteHotelAsync(int id); // Soft Delete (Chuyển Status)
+        Task<bool> DeleteHotelAsync(int id);
 
-        // --- SEARCH (Phức tạp) ---
-        Task<PagedResult<HotelDto>> SearchHotelsAsync(HotelSearchRequest request);
+        // --- SEARCH---
+        Task<List<HotelSearchResultDto>> SearchHotelsAsync(SearchRequestDto request);
         Task<List<Location>> GetLocationsAsync();
+
     }
 }

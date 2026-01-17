@@ -1,4 +1,4 @@
-import HomePage from "../components/HomePage";
+import HomePage from "./Client/HomePage";
 export default function AvailabilityCalendarPage() {
   return (
     <div>

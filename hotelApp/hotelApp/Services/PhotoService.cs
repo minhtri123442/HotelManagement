@@ -19,7 +19,7 @@ namespace hotelApp.Services
             _cloudinary = new Cloudinary(acc);
         }
 
-        public async Task<ImageUploadResult> AddPhotoAsync(IFormFile file)
+        public async Task<ImageUploadResult> AddPhotoAsync(IFormFile file, string folderName)
         {
             var uploadResult = new ImageUploadResult();
 
@@ -29,8 +29,9 @@ namespace hotelApp.Services
                 var uploadParams = new ImageUploadParams
                 {
                     File = new FileDescription(file.FileName, stream),
+                    Folder = $"HotelApp_Images/{folderName}",
                     // Tùy chọn: Tự động crop vuông nếu muốn (hoặc bỏ dòng dưới đi để giữ nguyên ảnh gốc)
-                    // Transformation = new Transformation().Height(500).Width(500).Crop("fill").Gravity("face") 
+                    Transformation = new Transformation().Height(500).Width(500).Crop("fill").Gravity("face") 
                 };
                 uploadResult = await _cloudinary.UploadAsync(uploadParams);
             }

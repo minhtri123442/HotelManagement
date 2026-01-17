@@ -24,10 +24,12 @@ namespace hotelApp.DTOs
 
         // --- PHẦN NHẬN FILE (INPUT) ---
 
-        // 1. Ảnh đại diện (1 file)
+        // Ảnh đại diện (1 file)
         public IFormFile? ThumbnailImage { get; set; }
 
-        // 2. Bộ sưu tập ảnh (Nhiều file)
+        // Bộ sưu tập ảnh (Nhiều file)
         public List<IFormFile>? GalleryImages { get; set; }
+
+        public List<int>? AmenityIds { get; set; }
     }
 }

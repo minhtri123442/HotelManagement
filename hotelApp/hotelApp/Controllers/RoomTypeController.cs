@@ -3,6 +3,7 @@ using hotelApp.Models;
 using hotelApp.Services;
 using hotelApp.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace hotelApp.Controllers
 {
@@ -12,8 +13,6 @@ namespace hotelApp.Controllers
     {
         private readonly IRoomTypeService _service;
         private readonly IRoomAvailabilityRepository _availRepo;
-
-        // 1. Thêm 2 dependency này để xử lý ảnh
         private readonly IPhotoService _photoService;
         private readonly HotelContext _db;
 
@@ -33,6 +32,8 @@ namespace hotelApp.Controllers
         public async Task<IActionResult> GetByHotel(int hotelId)
         {
             var result = await _service.GetRoomTypesByHotel(hotelId);
+            //không có thì trả về mảng rỗng
+            if (result == null) return Ok(new List<RoomTypeDto>());
             return Ok(result);
         }
 
@@ -43,9 +44,72 @@ namespace hotelApp.Controllers
             if (result == null) return NotFound();
             return Ok(result);
         }
+        [HttpGet("hotel/{hotelId}/available")]
+        public async Task<ActionResult<IEnumerable<RoomType>>> GetAvailableRoomTypes(
+            int hotelId,
+            DateTime checkIn,
+            DateTime checkOut)
+        {
+            var start = checkIn.Date;
+            var end = checkOut.Date;
+
+            // Chuyển đổi sang DateOnly để so sánh với Database (nếu DB lưu DateOnly)
+            // Nếu DB lưu DateTime thì xóa dòng DateOnly.FromDateTime đi
+            var startDateOnly = DateOnly.FromDateTime(start);
+            var endDateOnly = DateOnly.FromDateTime(end);
+
+            var availableRoomTypes = await _db.RoomTypes // SỬA: Dùng _db thay vì _context
+                .Where(rt => rt.HotelId == hotelId)
+                // LOGIC LỌC PHÒNG TRỐNG CHUẨN:
+                // Loại bỏ các phòng có bản ghi trong bảng RoomAvailability
+                // mà (Số lượng <= 0 HOẶC Đang đóng) trong khoảng ngày khách chọn
+                .Where(rt => !_db.RoomAvailabilities.Any(ra =>
+                    ra.RoomTypeId == rt.RoomTypeId &&
+                    ra.Date >= startDateOnly &&
+                    ra.Date < endDateOnly &&
+                    (ra.AvailableQty <= 0 || ra.IsClosed == true)
+                ))
+                .Include(rt => rt.RoomTypeImages)
+                .ToListAsync();
+
+            return Ok(availableRoomTypes);
+        }
+        // =========================================================
+        // HÀM PRIVATE: Xử lý Upload ảnh (Dùng chung cho cả Create và Update)
+        // =========================================================
+        private async Task ProcessImageUpload(IFormFile file, int hotelId, int roomTypeId, bool isThumbnail)
+        {
+            // 1. Quy hoạch folder: Rooms/Hotel_1
+            var folderName = $"Rooms/Hotel_{hotelId}";
+
+            // 2. Upload lên Cloudinary
+            var result = await _photoService.AddPhotoAsync(file, folderName);
+            if (result.Error != null) throw new Exception("Lỗi Cloudinary: " + result.Error.Message);
+
+            // 3. Lưu link vào DB
+            if (isThumbnail)
+            {
+                var roomEntity = await _db.RoomTypes.FindAsync(roomTypeId);
+                if (roomEntity != null)
+                {
+                    roomEntity.ThumbnailUrl = result.SecureUrl.AbsoluteUri;
+                    _db.RoomTypes.Update(roomEntity);
+                }
+            }
+            else
+            {
+                var imgEntity = new RoomTypeImage
+                {
+                    RoomTypeId = roomTypeId,
+                    ImageUrl = result.SecureUrl.AbsoluteUri,
+                    Caption = isThumbnail ? "Ảnh đại diện" : "Chi tiết"
+                };
+                _db.RoomTypeImages.Add(imgEntity);
+            }
+        }
 
         // =========================================================
-        // POST: api/roomtypes (Đã tích hợp Cloudinary)
+        // POST: Create
         // =========================================================
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] RoomTypeCreateDto input)
@@ -54,71 +118,49 @@ namespace hotelApp.Controllers
 
             try
             {
-                // Bước 1: Tạo Loại phòng (Chỉ lưu thông tin Text thông qua Service)
-                // Lưu ý: Đảm bảo RoomTypeService đã xóa code lưu ảnh local đi rồi nhé!
+
+                // Tạo RoomType text trước để lấy ID
                 var createdRoom = await _service.CreateRoomType(input);
-
-                // --- HÀM LOCAL: UPLOAD ẢNH & LƯU LINK VÀO DB ---
-                async Task UploadAndSaveImage(IFormFile file, bool isThumbnail)
+                // lưu tiện tích
+                if (input.AmenityIds != null && input.AmenityIds.Any())
                 {
-                    // a. Upload lên Cloudinary
-                    var result = await _photoService.AddPhotoAsync(file);
-                    if (result.Error != null) throw new Exception("Lỗi Cloudinary: " + result.Error.Message);
-
-                    // b. Lưu link vào Database
-                    if (isThumbnail)
+                    foreach (var amenityId in input.AmenityIds)
                     {
-                        // Cập nhật ThumbnailUrl cho phòng vừa tạo
-                        var roomEntity = await _db.RoomTypes.FindAsync(createdRoom.RoomTypeID);
-                        if (roomEntity != null)
-                        {
-                            roomEntity.ThumbnailUrl = result.SecureUrl.AbsoluteUri;
-                            _db.RoomTypes.Update(roomEntity);
-                        }
-                    }
-                    else
-                    {
-                        // Thêm ảnh vào bảng RoomTypeImages
-                        var imgEntity = new RoomTypeImage
+                        _db.RoomTypeAmenities.Add(new RoomTypeAmenity
                         {
                             RoomTypeId = createdRoom.RoomTypeID,
-                            ImageUrl = result.SecureUrl.AbsoluteUri,
-                            Caption = "Chi tiết"
-                        };
-                        _db.RoomTypeImages.Add(imgEntity);
+                            AmenityId = amenityId
+                        });
                     }
+                    await _db.SaveChangesAsync();
                 }
 
-                // Upload Thumbnail (nếu có)
+                //Upload Thumbnail
                 if (input.ThumbnailImage != null)
                 {
-                    await UploadAndSaveImage(input.ThumbnailImage, true);
+                    await ProcessImageUpload(input.ThumbnailImage, input.HotelID, createdRoom.RoomTypeID, true);
                 }
 
-                // Upload Gallery (nếu có)
+                //Upload Gallery
                 if (input.GalleryImages != null && input.GalleryImages.Count > 0)
                 {
                     foreach (var file in input.GalleryImages)
                     {
-                        await UploadAndSaveImage(file, false);
+                        await ProcessImageUpload(file, input.HotelID, createdRoom.RoomTypeID, false);
                     }
                 }
 
-                // Lưu các thay đổi về ảnh vào DB
+                // Lưu ảnh vào DB
                 await _db.SaveChangesAsync();
 
-
-                // =========================================================================
-                // Bước 2: TỰ ĐỘNG SINH DỮ LIỆU LỊCH (Giữ nguyên logic cũ)
-                // =========================================================================
+                // Sinh lịch 30 ngày
                 var today = DateOnly.FromDateTime(DateTime.Now);
                 for (int i = 0; i < 30; i++)
                 {
-                    var date = today.AddDays(i);
                     var availability = new RoomAvailability
                     {
                         RoomTypeId = createdRoom.RoomTypeID,
-                        Date = date,
+                        Date = today.AddDays(i),
                         AvailableQty = input.Quantity,
                         Price = input.BasePrice,
                         IsClosed = false
@@ -126,7 +168,6 @@ namespace hotelApp.Controllers
                     await _availRepo.AddAsync(availability);
                 }
                 await _availRepo.SaveChangesAsync();
-                // =========================================================================
 
                 return CreatedAtAction(nameof(GetById), new { id = createdRoom.RoomTypeID }, createdRoom);
             }
@@ -137,7 +178,7 @@ namespace hotelApp.Controllers
         }
 
         // =========================================================
-        // PUT: api/roomtypes/5 (Đã tích hợp Cloudinary)
+        // PUT: Update
         // =========================================================
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] RoomTypeUpdateDto input)
@@ -147,58 +188,53 @@ namespace hotelApp.Controllers
 
             try
             {
-                // Bước 1: Cập nhật thông tin Text qua Service
-                await _service.UpdateRoomType(id, input);
+                // Lấy thông tin phòng CŨ để biết chính xác nó thuộc Hotel nào (An toàn hơn tin vào input)
+                var existingRoom = await _service.GetRoomTypeById(id);
+                if (existingRoom == null) return NotFound("Không tìm thấy phòng");
 
-                // --- HÀM LOCAL: UPLOAD ẢNH MỚI (Nếu có) ---
-                async Task UploadAndSaveImage(IFormFile file, bool isThumbnail)
+                // Mẹo: DTO trả về thường có HotelID, nếu không có thì bạn phải query Entity. 
+                // Giả sử DTO trả về có HotelID hoặc bạn lấy từ input cũng tạm được nếu tin tưởng Front-end.
+                int currentHotelId = input.HotelID;
+
+                if (input.AmenityIds != null)
                 {
-                    var result = await _photoService.AddPhotoAsync(file);
-                    if (result.Error != null) throw new Exception("Lỗi Cloudinary: " + result.Error.Message);
+                    // Xóa sạch tiện ích cũ của phòng này
+                    var oldAmenities = _db.RoomTypeAmenities.Where(x => x.RoomTypeId == id);
+                    _db.RoomTypeAmenities.RemoveRange(oldAmenities);
 
-                    if (isThumbnail)
+                    // Thêm lại đống mới từ DTO
+                    foreach (var aid in input.AmenityIds)
                     {
-                        var roomEntity = await _db.RoomTypes.FindAsync(id);
-                        if (roomEntity != null)
-                        {
-                            roomEntity.ThumbnailUrl = result.SecureUrl.AbsoluteUri;
-                            _db.RoomTypes.Update(roomEntity);
-                        }
-                    }
-                    else
-                    {
-                        var imgEntity = new RoomTypeImage
+                        _db.RoomTypeAmenities.Add(new RoomTypeAmenity
                         {
                             RoomTypeId = id,
-                            ImageUrl = result.SecureUrl.AbsoluteUri,
-                            Caption = "Chi tiết (Mới)"
-                        };
-                        _db.RoomTypeImages.Add(imgEntity);
+                            AmenityId = aid
+                        });
                     }
                 }
 
-                // Kiểm tra và upload ảnh Thumbnail mới
+                // Update thông tin Text
+                await _service.UpdateRoomType(id, input);
+
+                // Upload Thumbnail Mới
                 if (input.ThumbnailImage != null)
                 {
-                    await UploadAndSaveImage(input.ThumbnailImage, true);
+                    await ProcessImageUpload(input.ThumbnailImage, currentHotelId, id, true);
                 }
 
-                // Kiểm tra và upload ảnh Gallery mới
+                // Upload Gallery Mới
                 if (input.GalleryImages != null && input.GalleryImages.Count > 0)
                 {
                     foreach (var file in input.GalleryImages)
                     {
-                        await UploadAndSaveImage(file, false);
+                        await ProcessImageUpload(file, currentHotelId, id, false);
                     }
                 }
 
-                // Lưu ảnh vào DB
+                // Lưu ảnh
                 await _db.SaveChangesAsync();
 
-
-                // =========================================================================
-                // Bước 2: ĐỒNG BỘ SỐ LƯỢNG SANG BẢNG LỊCH (Giữ nguyên logic cũ)
-                // =========================================================================
+                // Đồng bộ Lịch
                 var today = DateOnly.FromDateTime(DateTime.Now);
                 var futureDate = today.AddDays(30);
                 var availabilities = await _availRepo.GetByDateRangeAsync(id, today, futureDate);
@@ -206,17 +242,14 @@ namespace hotelApp.Controllers
                 foreach (var item in availabilities)
                 {
                     item.AvailableQty = input.Quantity;
-                    // item.Price = input.BasePrice; // Nếu muốn cập nhật giá luôn
                     await _availRepo.UpdateAsync(item);
                 }
                 await _availRepo.SaveChangesAsync();
-                // =========================================================================
 
                 return Ok(new { message = "Cập nhật thành công!" });
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("Không tìm thấy")) return NotFound();
                 return StatusCode(500, "Lỗi Server: " + ex.Message);
             }
         }
@@ -224,11 +257,49 @@ namespace hotelApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            // Nếu muốn xóa ảnh trên Cloudinary khi xóa phòng, bạn có thể gọi _photoService.DeletePhotoAsync ở đây
-            // Nhưng cần lấy được PublicID của ảnh từ URL trước.
-            // Tạm thời mình chỉ xóa DB.
             await _service.DeleteRoomType(id);
             return NoContent();
         }
+
+        // GET: api/roomtypes/check-availability
+        // API này tính toán số phòng trống thực tế trong khoảng thời gian khách chọn
+        [HttpGet("check-availability")]
+        public async Task<IActionResult> GetRealAvailability(int id, DateTime checkIn, DateTime checkOut)
+        {
+            // Lấy thông tin phòng gốc
+            var roomType = await _db.RoomTypes.FindAsync(id);
+            if (roomType == null) return NotFound(new { message = "Không tìm thấy loại phòng" });
+
+            int baseStock = roomType.Quantity ?? 0; // Tổng số phòng vật lý
+            int minAvailable = baseStock; // Giả định ban đầu là còn full
+
+            // Chuẩn hóa ngày (chỉ lấy phần ngày, bỏ giờ phút)
+            DateOnly startDate = DateOnly.FromDateTime(checkIn);
+            DateOnly endDate = DateOnly.FromDateTime(checkOut);
+
+            // Lấy dữ liệu lịch sử dụng phòng trong khoảng này
+            var availabilities = await _db.RoomAvailabilities
+                .Where(a => a.RoomTypeId == id && a.Date >= startDate && a.Date < endDate)
+                .ToListAsync();
+
+            // Thuật toán: Tìm "nút thắt cổ chai" (Ngày nào còn ít phòng nhất)
+            for (DateOnly date = startDate; date < endDate; date = date.AddDays(1))
+            {
+                var record = availabilities.FirstOrDefault(a => a.Date == date);
+
+                // Nếu ngày đó đã có record trong bảng Availability -> Lấy số lượng thực
+                // Nếu chưa có -> Tức là chưa ai đặt -> Lấy số lượng gốc (baseStock)
+                int stockOnDay = record != null ? record.AvailableQty : baseStock;
+
+                if (stockOnDay < minAvailable)
+                {
+                    minAvailable = stockOnDay;
+                }
+            }
+
+            // Trả về số lượng nhỏ nhất tìm được (không được nhỏ hơn 0)
+            return Ok(new { availableQty = Math.Max(0, minAvailable) });
+        }
+
     }
 }

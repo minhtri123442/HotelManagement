@@ -113,76 +113,102 @@ namespace hotelApp.Repositories
             return true;
         }
 
-        // ==========================================================
-        // 6. SEARCH (TÌM KIẾM NÂNG CAO - GIỐNG AGODA)
-        // ==========================================================
-        public async Task<PagedResult<HotelDto>> SearchHotelsAsync(HotelSearchRequest request)
+        // Nhớ thêm using: hotelApp.DTOs;
+        public async Task<List<HotelSearchResultDto>> SearchHotelsAsync(SearchRequestDto req)
         {
-            // Validation cơ bản
-            if (request.CheckOutDate <= request.CheckInDate)
-                throw new ArgumentException("Ngày Check-out phải lớn hơn Check-in");
+            // 1. QUERY CƠ BẢN (Filter SQL)
+            // Lấy khách sạn khớp keyword VÀ có ít nhất 1 loại phòng đủ sức chứa người
+            var query = _db.Hotels
+                .Include(h => h.Location)
+                .Include(h => h.HotelImages)
+                .Include(h => h.RoomTypes)
+                .ThenInclude(rt => rt.RoomAvailabilities) // Load trước lịch để check
+                .AsQueryable();
 
-            // Param cho SQL
-            var parameters = new[]
+            // Filter theo Keyword (Tên khách sạn hoặc Tên địa điểm)
+            if (!string.IsNullOrEmpty(req.Keyword))
             {
-                new SqlParameter("@LocationID", request.LocationID ?? (object)DBNull.Value),
-                new SqlParameter("@Keyword", request.Keyword ?? (object)DBNull.Value),
-                new SqlParameter("@CheckInDate", request.CheckInDate),
-                new SqlParameter("@CheckOutDate", request.CheckOutDate),
-                new SqlParameter("@Adults", request.Adults),
-                new SqlParameter("@PageSize", request.PageSize),
-                new SqlParameter("@PageIndex", request.PageIndex)
-            };
-
-            // Gọi Stored Procedure
-            // Lưu ý: EF Core 8 dùng SqlQuery, bản cũ hơn dùng FromSqlRaw.
-            // Ta dùng class tạm HotelSearchResultRaw để hứng dữ liệu vì SP trả về cấu trúc phẳng
-            string sql = "EXEC sp_SearchAvailableHotels @LocationID, @Keyword, @CheckInDate, @CheckOutDate, @Adults, @PageSize, @PageIndex";
-
-            var rawResults = await _db.Database
-                .SqlQueryRaw<HotelSearchResultRaw>(sql, parameters)
-                .ToListAsync();
-
-            // Nếu không có kết quả
-            if (!rawResults.Any())
-            {
-                return new PagedResult<HotelDto>
-                {
-                    Items = new List<HotelDto>(),
-                    TotalCount = 0,
-                    PageIndex = request.PageIndex,
-                    PageSize = request.PageSize
-                };
+                var k = req.Keyword.ToLower();
+                query = query.Where(h => h.Name.ToLower().Contains(k)
+                                      || h.Location.LocationName.ToLower().Contains(k)
+                                      || h.Address.ToLower().Contains(k));
             }
 
-            // Map từ Raw SQL Result sang HotelDto
-            var dtos = rawResults.Select(r => new HotelDto
-            {
-                HotelID = r.HotelID,
-                Name = r.Name,
-                Slug = r.Slug,
-                Address = r.Address,
-                LocationID = r.LocationID,
-                StarRating = r.StarRating,
-                Description = r.Description,
-                MapLatitude = r.MapLatitude,
-                MapLongitude = r.MapLongitude,
-                Status = "Active",
-                // Xử lý ảnh: Vì SP chỉ trả về 1 ảnh main, ta đưa nó vào list
-                ImageUrls = string.IsNullOrEmpty(r.MainImage) ? new List<string>() : new List<string> { r.MainImage },
+            // Filter theo sức chứa (Chưa check ngày, chỉ check cấu hình phòng)
+            // Phải có ít nhất 1 loại phòng chứa đủ người lớn & trẻ em
+            query = query.Where(h => h.RoomTypes.Any(rt => rt.MaxAdults >= req.Adults && rt.MaxChildren >= req.Children));
 
-                // Mẹo: Bạn có thể thêm 1 trường "StartingPrice" vào HotelDto để hiển thị giá này
-                // Hiện tại mình tạm để vào Description để bạn thấy demo
-                // Description = $"Giá từ: {r.StartingPrice:N0} VNĐ. {r.Description}" 
-            }).ToList();
+            var candidates = await query.ToListAsync();
+            var results = new List<HotelSearchResultDto>();
 
-            return new PagedResult<HotelDto>
+            // 2. CHECK AVAILABILITY (Logic phức tạp - Xử lý In-Memory)
+            foreach (var hotel in candidates)
             {
-                Items = dtos,
-                TotalCount = rawResults.First().TotalCount, // Lấy tổng số dòng từ row đầu tiên
-                PageIndex = request.PageIndex,
-                PageSize = request.PageSize
-            };
+                decimal? bestPriceForStay = null; // Giá tốt nhất cho cả kỳ nghỉ
+                bool isHotelAvailable = false;
+
+                // Duyệt từng loại phòng của khách sạn này
+                foreach (var roomType in hotel.RoomTypes)
+                {
+                    // Bỏ qua nếu phòng không đủ sức chứa
+                    if (roomType.MaxAdults < req.Adults || roomType.MaxChildren < req.Children) continue;
+
+                    bool isRoomAvailable = true;
+                    decimal totalPrice = 0;
+
+                    // Loop từng ngày từ CheckIn đến CheckOut (không tính ngày CheckOut)
+                    for (var date = req.CheckIn; date < req.CheckOut; date = date.AddDays(1))
+                    {
+                        // Tìm cấu hình của ngày hôm đó trong bảng RoomAvailability
+                        var availData = roomType.RoomAvailabilities?.FirstOrDefault(x => x.Date == date);
+
+                        // Xác định số lượng phòng trống & giá
+                        // Nếu không có record trong bảng RoomAvailability -> Lấy mặc định từ RoomType
+                        int currentQty = availData?.AvailableQty ?? (roomType.Quantity ?? 0);
+                        decimal currentPrice = availData?.Price ?? roomType.BasePrice;
+                        bool isClosed = availData?.IsClosed ?? false;
+
+                        // Điều kiện Fail: Đóng phòng HOẶC Không đủ số lượng phòng yêu cầu
+                        if (isClosed || currentQty < req.Rooms)
+                        {
+                            isRoomAvailable = false;
+                            break; // Gãy chuỗi ngày, loại phòng này không khả dụng
+                        }
+
+                        totalPrice += currentPrice;
+                    }
+
+                    // Nếu loại phòng này OK cho cả chuỗi ngày
+                    if (isRoomAvailable)
+                    {
+                        isHotelAvailable = true;
+                        // Nếu giá này rẻ hơn giá trước đó tìm được thì lấy
+                        if (bestPriceForStay == null || totalPrice < bestPriceForStay)
+                        {
+                            bestPriceForStay = totalPrice;
+                        }
+                    }
+                }
+
+                // Nếu khách sạn có ít nhất 1 phòng thỏa mãn
+                if (isHotelAvailable)
+                {
+                    results.Add(new HotelSearchResultDto
+                    {
+                        HotelID = hotel.HotelId,
+                        Name = hotel.Name,
+                        Address = hotel.Address,
+                        StarRating = hotel.StarRating ?? 0,
+                        ImageUrl = hotel.HotelImages.FirstOrDefault(x => x.IsMain??false)?.ImageUrl ?? hotel.HotelImages.FirstOrDefault()?.ImageUrl,
+                        MinPrice = bestPriceForStay ?? 0, // Đây là tổng giá cho cả kỳ nghỉ (hoặc bạn có thể chia trung bình)
+                        IsAvailable = true
+                    });
+                }
+            }
+
+            return results;
         }
+
+
     }
 }

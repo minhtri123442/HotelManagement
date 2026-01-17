@@ -63,6 +63,5 @@ public partial class Hotel
     public virtual ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
 
     [ForeignKey("HotelId")]
-    [InverseProperty("Hotels")]
-    public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
+    public ICollection<HotelAmenity> HotelAmenities { get; set; } = new List<HotelAmenity>();
 }

@@ -107,6 +107,7 @@ namespace hotelApp.Services
                 Quantity = r.Quantity ?? 0,
                 ThumbnailUrl = r.ThumbnailUrl,
                 Description = r.Description,
+                AmenityIds = r.RoomTypeAmenities?.Select(ra => ra.AmenityId).ToList() ?? new List<int>(),
                 RoomTypeImages = r.RoomTypeImages?.Select(img => new RoomTypeImageDto
                 {
                     RoomImageID = img.RoomImageId,

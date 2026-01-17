@@ -34,7 +34,4 @@ public partial class CheckHistory
     [InverseProperty("CheckHistories")]
     public virtual Booking Booking { get; set; } = null!;
 
-    [ForeignKey("EmployeeId")]
-    [InverseProperty("CheckHistories")]
-    public virtual Employee? Employee { get; set; }
 }

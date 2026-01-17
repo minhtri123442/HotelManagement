@@ -16,6 +16,7 @@ namespace hotelApp.Repositories
         {
             return await _context.RoomTypes
                                  .Include(r => r.RoomTypeImages)
+                                 .Include(r => r.RoomTypeAmenities)
                                  .Where(r => r.HotelId == hotelId)
                                  .ToListAsync();
         }
@@ -24,6 +25,7 @@ namespace hotelApp.Repositories
         {
             return await _context.RoomTypes
                                  .Include(r => r.RoomTypeImages)
+                                 .Include(r => r.RoomTypeAmenities)
                                  .FirstOrDefaultAsync(r => r.RoomTypeId == id);
         }
 

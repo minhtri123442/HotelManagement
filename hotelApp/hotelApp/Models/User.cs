@@ -26,7 +26,7 @@ public partial class User
     public string? PhoneNumber { get; set; }
 
     [StringLength(20)]
-    public string? Role { get; set; }
+    public string? Role { get; set; } = "Customer";
 
     public DateTime? CreatedAt { get; set; }
 

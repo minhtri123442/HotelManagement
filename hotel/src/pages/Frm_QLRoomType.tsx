@@ -1,4 +1,4 @@
-import RoomTypeList from "../components/RoomType";
+import RoomTypeList from "./Admin/RoomTypeManagement";
 export default function frm_RoomType() {
   return (
     <div className="p-4">
